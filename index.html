@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Habits</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <h1>Habits</h1>
+    <button id="reloadBtn" class="iconBtn" title="Reload">↻</button>
+  </header>
+
+  <main class="container">
+    <section class="card">
+      <div class="weekbar">
+        <button id="prevWeek" class="iconBtn" title="Previous week">‹</button>
+        <div class="weekTitle" id="weekTitle"></div>
+        <button id="nextWeek" class="iconBtn" title="Next week">›</button>
+      </div>
+
+      <div id="grid" class="gridWrap"></div>
+    </section>
+
+    <section class="card">
+      <h2>Add habit</h2>
+      <div class="row">
+        <input id="newHabit" type="text" placeholder="e.g., Reading" />
+        <button id="addHabitBtn" class="primary">Add</button>
+      </div>
+      <p class="hint">Tip: tap on a cell to toggle ✓.</p>
+    </section>
+
+    <section class="card">
+      <details>
+        <summary>Settings</summary>
+        <div class="row">
+          <label class="lbl">API URL</label>
+          <input id="apiUrl" type="text" placeholder="https://script.google.com/macros/s/.../exec" />
+        </div>
+        <div class="row">
+          <label class="lbl">Token</label>
+          <input id="apiToken" type="password" placeholder="your token" />
+        </div>
+        <div class="row">
+          <button id="saveCfg" class="primary">Save</button>
+          <button id="clearCfg" class="ghost">Clear</button>
+        </div>
+        <p class="hint">Saved in this browser (local). Same URL works on phone/PC; just set it once per device.</p>
+      </details>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
