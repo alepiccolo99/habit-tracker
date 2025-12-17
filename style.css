@@ -60,6 +60,8 @@ h1 { font-size: 28px; font-weight: 700; margin: 0; }
     cursor: pointer;
     font-size: 18px;
     border-left: 1px solid var(--border);
+    transition: all 0.2s ease;
+    -webkit-tap-highlight-color: transparent;
 }
 
 .cell.checked { color: var(--accent); }
