@@ -1,5 +1,5 @@
-const SCRIPT_URL = "INSERISCI_QUI_URL_WEB_APP_GOOGLE";
-const TOKEN = "IL_TUO_TOKEN_SEGRETO";
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwB49dnXc5wFyia7NTXHfgt0LJm6LX_nZWgssc_yEiY5UO6XtYoB71iUq06MxZ6QprvZA/exec";
+const TOKEN = "aleLifeTracker_1999";
 
 let habits = [];
 let logs = [];
