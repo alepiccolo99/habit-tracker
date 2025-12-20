@@ -41,34 +41,20 @@
             </div>
         </section>
 
-        <section id="health-view" class="view">
-            <div class="card">
-                <h3>Health Log</h3>
-                <p>Coming soon...</p>
-            </div>
-        </section>
-
-        <section id="workout-view" class="view">
-            <div class="card">
-                <h3>Workout Log</h3>
-                <p>Coming soon...</p>
-            </div>
-        </section>
-
-        <section id="diet-view" class="view">
-            <div class="card">
-                <h3>Diet Log</h3>
-                <p>Coming soon...</p>
-            </div>
-        </section>
+        <section id="health-view" class="view"><div class="card"><h3>Health Log</h3><p>Coming soon...</p></div></section>
+        <section id="workout-view" class="view"><div class="card"><h3>Workout Log</h3><p>Coming soon...</p></div></section>
+        <section id="diet-view" class="view"><div class="card"><h3>Diet Log</h3><p>Coming soon...</p></div></section>
 
         <section id="settings-view" class="view">
             <div class="card">
                 <h3>App Theme</h3>
-                <p class="text-secondary">Pick your accent color manually</p>
-                <div class="input-row" style="align-items: center;">
-                    <input type="color" id="themeColorPicker" style="height: 50px; padding: 0; background: none; cursor: pointer;" onchange="updateThemeFromPicker(this.value)">
-                    <span class="text-secondary">Click to choose color</span>
+                <p class="text-secondary">Customize your accent color</p>
+                
+                <div class="color-picker-wrapper">
+                    <label class="btn-picker">
+                        Pick Color
+                        <input type="color" id="themeColorPicker" onchange="updateThemeFromPicker(this.value)">
+                    </label>
                 </div>
             </div>
         </section>
@@ -76,30 +62,24 @@
 
     <div id="habit-detail-modal" class="modal">
         <div class="modal-header">
-            <button onclick="closeHabitModal()">← Back</button>
+            <button class="btn-secondary" onclick="closeHabitModal()">Back</button>
             <h2 id="modal-habit-title">Habit</h2>
-            <button class="btn-text-gray" onclick="toggleEditHabit()">Edit</button>
+            <button class="btn-secondary" style="background:transparent!important; color:var(--text-secondary)!important" onclick="toggleEditHabit()">Edit</button>
         </div>
         
         <div class="modal-content">
             <div id="habit-edit-form" class="card" style="display:none; border: 1px solid var(--border-color); margin-bottom: 20px;">
                 <h3>Edit Habit</h3>
-                <div class="input-row">
-                    <input type="text" id="edit-name" placeholder="Name">
-                </div>
+                <input type="text" id="edit-name" placeholder="Name">
                 <div class="input-row">
                     <select id="edit-freq">
                         <option value="Daily">Daily</option>
                         <option value="Weekly">Weekly</option>
-                        <option value="Monthly">Monthly</option>
-                        <option value="Yearly">Yearly</option>
                     </select>
                     <input type="number" id="edit-target" placeholder="Target">
                 </div>
-                <div class="input-row" style="margin-top: 10px;">
-                    <button class="btn-primary" onclick="saveHabitConfig()">Save Changes</button>
-                    <button class="btn-danger" onclick="deleteCurrentHabit()">Delete Habit</button>
-                </div>
+                <button class="btn-primary" onclick="saveHabitConfig()">Save Changes</button>
+                <button class="btn-secondary" style="width:100%; margin-top:10px; color:#ff453a!important" onclick="deleteCurrentHabit()">Delete Habit</button>
             </div>
 
             <div class="stats-row">
@@ -118,7 +98,7 @@
             </div>
 
             <div class="card">
-                <div class="calendar-header">
+                <div class="calendar-header" style="text-align:center; margin-bottom:10px;">
                     <h3 id="cal-month-name">Month</h3>
                 </div>
                 <div class="calendar-grid" id="calendar-grid"></div>
@@ -126,10 +106,11 @@
 
             <div class="card">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-                    <h3 id="heatmap-title">History</h3>
-                    <select id="heatmap-select" onchange="renderHeatmap(currentHabitId)" style="width: auto; margin:0; padding: 5px;">
+                    <h3 style="margin:0; font-size:18px">History</h3>
+                    <select id="heatmap-select" onchange="renderHeatmap(currentHabitId)" style="width: auto; margin:0; padding: 5px 10px;">
                         <option value="3months">Last 3 Months</option>
                         <option value="year">Last Year</option>
+                        <option value="all">All Time</option>
                     </select>
                 </div>
                 <div class="heatmap-grid" id="heatmap-grid"></div>
@@ -139,19 +120,16 @@
 
     <div id="add-habit-modal" class="modal" style="display:none; z-index: 2100;">
         <div class="modal-header">
-            <button onclick="document.getElementById('add-habit-modal').style.display='none'">Cancel</button>
+            <button class="btn-secondary" onclick="document.getElementById('add-habit-modal').style.display='none'">Cancel</button>
             <h2>New Habit</h2>
-            <div></div>
-        </div>
+            <div style="width:50px"></div> </div>
         <div class="modal-content">
             <div class="card">
-                <input type="text" id="newHabitName" placeholder="Habit Name">
+                <input type="text" id="newHabitName" placeholder="Name (e.g. Read Book)">
                 <div class="input-row">
                     <select id="newHabitFreq">
                         <option value="Daily">Daily</option>
                         <option value="Weekly">Weekly</option>
-                        <option value="Monthly">Monthly</option>
-                        <option value="Yearly">Yearly</option>
                     </select>
                     <input type="number" id="newHabitTarget" value="1">
                 </div>
