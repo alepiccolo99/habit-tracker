@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="it">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
@@ -11,155 +11,149 @@
     <div id="sidebar" class="sidebar">
         <div class="profile-section">
             <div class="avatar">AP</div>
-            <div class="profile-info">
-                <div class="name">Alessandro Piccolo</div>
-                <div class="username">@alepiccolo99</div>
-            </div>
+            <div class="name">Alessandro Piccolo</div>
+            <div class="username">@alepiccolo99</div>
         </div>
         <nav>
             <button onclick="router('habits')" class="nav-btn active">Habits</button>
             <button onclick="router('health')" class="nav-btn">Health</button>
             <button onclick="router('workout')" class="nav-btn">Workout</button>
             <button onclick="router('diet')" class="nav-btn">Diet</button>
+            <button onclick="router('settings')" class="nav-btn">Settings</button>
         </nav>
-        <div class="settings-section">
-            <button class="nav-btn">⚙️ Settings</button>
-        </div>
     </div>
-
     <div id="overlay" onclick="toggleSidebar()"></div>
 
     <div class="main-container">
-        <header>
+        
+        <header id="main-header">
             <button id="menuBtn" onclick="toggleSidebar()">☰</button>
             <h1 id="page-title">Habits</h1>
-            <div style="width: 24px;"></div> </header>
+            <button id="headerActionBtn" class="action-btn" onclick="openAddModal()">+</button>
+        </header>
 
         <section id="habits-view" class="view active-view">
-            <div class="card" style="padding: 15px 10px; background: transparent;">
-                <div id="week-header" class="days-row"></div>
-                <div id="habits-list">Loading...</div>
+            <div id="habits-container">
+                <div id="habits-week-header" class="habit-grid-header">
+                    </div>
+                <div id="habits-list">
+                    <div style="text-align:center; margin-top:50px; color:var(--text-secondary)">Loading...</div>
+                </div>
+            </div>
+        </section>
+
+        <section id="habit-detail-view" class="view">
+            <div class="detail-header">
+                <button class="back-btn" onclick="router('habits')">←</button>
+                <h1 id="detail-title">Reading</h1>
+            </div>
+
+            <div class="stats-row">
+                <div class="stat-box">
+                    <div class="stat-val" id="stat-streak">0</div>
+                    <div class="stat-label">Streak</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-val" id="stat-rate">0%</div>
+                    <div class="stat-label">Month Rate</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-val" id="stat-total">0</div>
+                    <div class="stat-label">Check-ins</div>
+                </div>
             </div>
 
             <div class="card">
-                <h3>Aggiungi Abitudine</h3>
-                <div style="display: flex; gap: 10px;">
-                    <input type="text" id="newHabitName" placeholder="Es. Leggere 10 pagine..." style="margin-bottom: 0;">
-                    <button class="btn-primary" onclick="handleAddHabit()" style="width: auto; padding: 0 20px;">+</button>
+                <h3 id="cal-month-name">Calendar</h3>
+                <div id="calendar-grid" class="calendar-grid"></div>
+            </div>
+
+            <div class="card">
+                <h3>Consistency (Last 90 Days)</h3>
+                <div id="heatmap-grid" class="heatmap-container"></div>
+            </div>
+
+            <div class="card">
+                <h3>Goal Settings</h3>
+                <div class="log-item">
+                    <div>Frequency</div>
+                    <div id="detail-freq" style="color:var(--text-secondary)">Daily</div>
                 </div>
+                <div class="log-item">
+                    <div>Target</div>
+                    <div id="detail-target" style="color:var(--text-secondary)">1/day</div>
+                </div>
+            </div>
+        </section>
+
+        <section id="settings-view" class="view">
+            <div class="card">
+                <h3>App Theme</h3>
+                <div class="color-grid">
+                    <div class="color-opt" style="background:#0a84ff" onclick="setTheme('#0a84ff')"></div> <div class="color-opt" style="background:#30d158" onclick="setTheme('#30d158')"></div> <div class="color-opt" style="background:#ff453a" onclick="setTheme('#ff453a')"></div> <div class="color-opt" style="background:#ff9f0a" onclick="setTheme('#ff9f0a')"></div> <div class="color-opt" style="background:#bf5af2" onclick="setTheme('#bf5af2')"></div> <div class="color-opt" style="background:#98989d" onclick="setTheme('#98989d')"></div> </div>
             </div>
         </section>
 
         <section id="health-view" class="view">
             <div class="card">
-                <h3>Nuova Misurazione</h3>
-                <div class="form-grid">
-                    <select id="healthType">
-                        <option value="Peso">Peso (kg)</option>
-                        <option value="Sonno">Sonno (ore)</option>
-                        <option value="Stress">Stress (1-10)</option>
-                        <option value="BPM">BPM (battiti/min)</option>
-                        <option value="HRV">HRV (ms)</option>
-                    </select>
-                    <input type="number" id="healthValue" placeholder="Valore" step="0.1">
-                    <input type="text" id="healthNotes" placeholder="Note opzionali">
-                    <button class="btn-primary" onclick="handleAddMetric()">
-                        <span style="font-size: 18px;">✓</span> Registra Dato
-                    </button>
-                </div>
+                <h3>Add Metric</h3>
+                <select id="healthType">
+                    <option value="Weight">Weight (kg)</option>
+                    <option value="Sleep">Sleep (hrs)</option>
+                    <option value="Stress">Stress (1-10)</option>
+                </select>
+                <input type="number" id="healthValue" placeholder="Value">
+                <button class="btn-primary" onclick="handleAddMetric()">Save</button>
             </div>
-            <div class="card">
-                 <h3>Storico Recente</h3>
-                <div id="health-list" class="details-list"></div>
-            </div>
+            <div id="health-list" class="log-list"></div>
         </section>
 
         <section id="workout-view" class="view">
             <div class="tabs">
-                <button class="tab-btn active" onclick="switchTab('workout', 'log')">Session Log</button>
-                <button class="tab-btn" onclick="switchTab('workout', 'db')">Esercizi DB</button>
+                <button class="tab-btn active" onclick="switchTab('workout', 'log')">Log</button>
+                <button class="tab-btn" onclick="switchTab('workout', 'db')">Exercises</button>
             </div>
-
             <div id="workout-log-tab" class="tab-content active">
                 <div class="card">
-                    <select id="workoutExerciseSelect"><option>Caricamento esercizi...</option></select>
-                    <div class="input-row">
-                        <input type="number" id="woWeight" placeholder="kg">
-                        <input type="number" id="woReps" placeholder="Reps">
-                    </div>
-                    <div class="input-row">
-                        <input type="number" id="woSets" placeholder="Sets">
-                        <input type="number" id="woRPE" placeholder="RPE (1-10)">
-                    </div>
-                    <button class="btn-primary" onclick="handleLogWorkout()">
-                        Registra Set
-                    </button>
+                     <select id="woExercise"><option>Loading...</option></select>
+                     <div style="display:flex; gap:10px"><input id="woKg" placeholder="Kg"><input id="woReps" placeholder="Reps"></div>
+                     <button class="btn-primary" onclick="handleLogWorkout()">Log Set</button>
                 </div>
                 <div id="workout-history" class="log-list"></div>
             </div>
-
             <div id="workout-db-tab" class="tab-content">
                 <div class="card">
-                    <h3>Nuovo Esercizio</h3>
-                    <input type="text" id="exName" placeholder="Nome Esercizio">
-                    <select id="exMuscle">
-                        <option value="Pecs">Pettorali</option>
-                        <option value="Back">Dorsali</option>
-                        <option value="Legs">Gambe</option>
-                        <option value="Shoulders">Spalle</option>
-                        <option value="Arms">Braccia</option>
-                        <option value="Core">Addome/Core</option>
-                    </select>
-                    <select id="exPattern">
-                        <option value="Push">Push (Spinta)</option>
-                        <option value="Pull">Pull (Trazione)</option>
-                        <option value="Squat">Squat (Accosciata)</option>
-                        <option value="Hinge">Hinge (Anca)</option>
-                        <option value="Lunge">Lunge (Affondo)</option>
-                        <option value="Carry">Carry (Trasporto)</option>
-                    </select>
-                    <button class="btn-primary" onclick="handleAddExercise()">Aggiungi al DB</button>
+                    <input id="exName" placeholder="Exercise Name">
+                    <button class="btn-primary" onclick="handleAddExercise()">Add to DB</button>
                 </div>
             </div>
         </section>
 
         <section id="diet-view" class="view">
-            <div class="tabs">
-                <button class="tab-btn active" onclick="switchTab('diet', 'log')">Daily Log</button>
-                <button class="tab-btn" onclick="switchTab('diet', 'db')">Food DB</button>
-            </div>
-
-            <div id="diet-log-tab" class="tab-content active">
-                <div class="card">
-                    <select id="dietFoodSelect"><option>Caricamento cibi...</option></select>
-                    <input type="number" id="dietQty" placeholder="Quantità (es: 1.0 = una porzione)">
-                    <button class="btn-primary" onclick="handleLogFood()">
-                         Aggiungi al Diario
-                    </button>
-                </div>
-                <div id="diet-history" class="log-list"></div>
-            </div>
-
-            <div id="diet-db-tab" class="tab-content">
-                <div class="card">
-                    <h3>Nuovo Alimento</h3>
-                    <input type="text" id="foodName" placeholder="Nome Cibo">
-                    <input type="text" id="foodBrand" placeholder="Marca (opzionale)">
-                    <div class="input-row">
-                        <input type="number" id="foodServing" placeholder="Porzione (g/ml)">
-                        <input type="number" id="foodCals" placeholder="Kcal">
-                    </div>
-                    <div class="input-row" style="margin-bottom: 12px;">
-                         <input type="number" id="foodProt" placeholder="Prot (g)">
-                         <input type="number" id="foodCarbs" placeholder="Carbo (g)">
-                         <input type="number" id="foodFat" placeholder="Grassi (g)">
-                    </div>
-                    <button class="btn-primary" onclick="handleAddFood()">Salva nel DB</button>
-                </div>
-            </div>
+             <div class="card">
+                <h3>Quick Add</h3>
+                <select id="dietFood"><option>Loading...</option></select>
+                <input id="dietQty" placeholder="Quantity">
+                <button class="btn-primary" onclick="handleLogFood()">Eat</button>
+             </div>
+             <div id="diet-history" class="log-list"></div>
         </section>
 
     </div>
+
+    <dialog id="addHabitModal" style="background:var(--bg-card); color:white; border:none; border-radius:16px; padding:20px; width:80%;">
+        <h3>New Habit</h3>
+        <input id="newHabitName" placeholder="Habit Name">
+        <select id="newHabitFreq">
+            <option value="Daily">Daily</option>
+            <option value="Weekly">Weekly</option>
+        </select>
+        <div style="display:flex; gap:10px; margin-top:10px">
+            <button class="btn-primary" style="background:var(--bg-input); color:var(--text-primary)" onclick="document.getElementById('addHabitModal').close()">Cancel</button>
+            <button class="btn-primary" onclick="submitNewHabit()">Save</button>
+        </div>
+    </dialog>
+
     <script src="app.js"></script>
 </body>
 </html>
