@@ -12,6 +12,10 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 async function fetchData() {
+    // Show loading
+    const loader = document.getElementById('loading-overlay');
+    if(loader) loader.style.display = 'flex';
+
     try {
         const resp = await fetch(`${SCRIPT_URL}?token=${TOKEN}&action=getAll`);
         const data = await resp.json();
@@ -26,7 +30,9 @@ async function fetchData() {
         router('habits');
     } catch (e) {
         console.error(e);
-        document.getElementById('habits-list').innerHTML = ""; 
+    } finally {
+        // FIX Habits #1: Hide loading overlay
+        if(loader) loader.style.display = 'none';
     }
 }
 
@@ -100,7 +106,7 @@ function renderHabitDashboard() {
     const header = document.getElementById('week-header');
     
     if (!appData.habits || appData.habits.length === 0) {
-        list.innerHTML = ""; 
+        list.innerHTML = `<div style="text-align:center; color:#555; margin-top:30px;">Tap "Add" to start.</div>`;
         header.innerHTML = '';
         return;
     }
@@ -169,9 +175,11 @@ function openHabitDetail(id) {
     document.getElementById('modal-habit-title').innerText = habit[1];
     document.getElementById('habit-detail-modal').style.display = 'block';
     
+    // FIX Habits #3: Pre-fill Edit Form Values
     document.getElementById('edit-name').value = habit[1];
     document.getElementById('edit-freq').value = habit[2] || 'Daily';
     document.getElementById('edit-target').value = habit[3] || 1;
+    
     document.getElementById('habit-edit-form').style.display = 'none';
 
     renderHabitStats(id);
