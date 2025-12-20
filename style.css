@@ -22,29 +22,38 @@ body {
 }
 
 /* --- THEME UTILS --- */
-button, .nav-btn.active, .stat-val {
+button, .stat-val {
     color: var(--accent-color);
 }
 
-/* Fix: Ticks color forced */
-.cell.checked {
-    color: var(--accent-color) !important;
-    background: rgba(255, 255, 255, 0.1); 
-    font-weight: 800; /* Thicker tick */
+/* SIDEBAR ACTIVE STATE */
+.nav-btn.active { 
+    background: var(--bg-input); 
+    border-right: 3px solid var(--accent-color); 
+    color: var(--text-primary); 
 }
 
-/* Fix: Current Day Border */
+/* HABIT TICKS - FORCE COLOR */
+.cell.checked {
+    color: var(--accent-color) !important; /* Forces the checkmark color */
+    background: rgba(255, 255, 255, 0.1); 
+    font-weight: 800;
+}
+
+/* CURRENT DAY BORDER */
 .cell.current-day {
     border: 1px solid var(--accent-color);
     box-sizing: border-box;
 }
 
-/* Main Action Button (Create Habit) - Rounder and bigger */
+/* --- BUTTONS --- */
+
+/* Primary (Create Habit / Save) - Round Pill Shape */
 .btn-primary {
     background: var(--accent-color) !important;
-    color: #000 !important; /* Text grey/black */
+    color: #000 !important;
     border: none !important;
-    border-radius: 30px !important; /* Pill shape */
+    border-radius: 30px !important; /* Rounder */
     padding: 16px 24px !important;
     width: 100%;
     cursor: pointer;
@@ -53,60 +62,79 @@ button, .nav-btn.active, .stat-val {
     margin-top: 10px;
 }
 
-/* Secondary Button (Cancel/Back) - Dark Grey */
+/* Secondary (Cancel, Back, Header +) - Light Grey */
 .btn-secondary {
-    background: var(--bg-input) !important;
-    color: var(--text-primary) !important;
+    background: #3a3a3c !important; /* Light Grey */
+    color: #ffffff !important;
     border: none !important;
     border-radius: var(--btn-radius);
     padding: 8px 16px;
     cursor: pointer;
     font-weight: 600;
     font-size: 14px;
-}
-
-/* Header Add Button (+) */
-.btn-header-add {
-    background: var(--bg-input);
-    color: var(--text-primary);
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    border: none;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 28px;
-    font-weight: 400; /* Thicker plus sign handled in JS content */
-    cursor: pointer;
-    padding-bottom: 4px; /* Alignment tweak */
 }
 
-/* Settings Color Picker Button Style */
-.color-picker-wrapper {
-    position: relative;
-    width: 100%;
+/* Header Add Button (+) Specifics */
+.btn-header-add {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    font-size: 24px;
+    padding: 0; /* Center the plus */
 }
-.btn-picker {
-    width: 100%;
-    background: var(--bg-input);
-    color: var(--text-primary);
-    padding: 15px;
+
+/* Edit Button (Text only) */
+.btn-text-gray {
+    color: #8e8e93 !important;
+    background: none;
+    border: none;
+    font-size: 16px;
+    cursor: pointer;
+}
+
+.btn-danger {
+    background: #ff453a !important;
+    color: #fff !important;
+    border: none;
     border-radius: var(--btn-radius);
-    text-align: center;
+    padding: 14px;
+    width: 100%;
+    cursor: pointer;
     font-weight: 600;
-    cursor: pointer;
-    display: block;
-}
-/* Hide actual input but keep it functional */
-input[type="color"] {
-    position: absolute;
-    top: 0; left: 0; width: 100%; height: 100%;
-    opacity: 0;
-    cursor: pointer;
 }
 
-/* --- LAYOUT & GRIDS --- */
+/* --- INPUTS & DROPDOWNS --- */
+.color-picker-wrapper { position: relative; width: 100%; }
+.btn-picker { width: 100%; background: var(--bg-input); color: var(--text-primary); padding: 15px; border-radius: var(--btn-radius); text-align: center; font-weight: 600; cursor: pointer; display: block; }
+input[type="color"] { position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
+
+input, select { 
+    width: 100%; 
+    padding: 14px; 
+    background: var(--bg-input); 
+    border: none; 
+    border-radius: var(--btn-radius); 
+    color: #fff; 
+    margin-bottom: 10px; 
+    box-sizing: border-box; 
+    font-size: 16px; 
+}
+
+/* Custom Select Style (Arrow 'v') */
+select {
+    -webkit-appearance: none;
+    appearance: none;
+    background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23FFFFFF%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
+    background-repeat: no-repeat;
+    background-position: right 15px top 50%;
+    background-size: 12px auto;
+    padding-right: 40px; /* Space for arrow */
+}
+
+/* --- LAYOUT --- */
 .main-container { padding: 20px; padding-bottom: 80px; }
 .view { display: none; }
 .view.active-view { display: block; animation: fadeIn 0.3s ease-out; }
@@ -123,7 +151,6 @@ header { display: flex; justify-content: space-between; align-items: center; pad
 .profile-section { padding: 40px 20px; text-align: center; border-bottom: 1px solid var(--border-color); }
 .avatar { width: 60px; height: 60px; background: var(--bg-input); border-radius: 50%; margin: 0 auto 10px; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #fff; }
 .nav-btn { width: 100%; padding: 15px 20px; background: none; border: none; text-align: left; color: var(--text-secondary); font-size: 16px; cursor: pointer; }
-.nav-btn.active { background: var(--bg-input); border-right: 3px solid var(--accent-color); color: var(--text-primary); }
 #overlay { position: fixed; inset:0; background: rgba(0,0,0,0.5); z-index: 900; display: none; }
 
 /* Habits Grid */
@@ -154,5 +181,4 @@ header { display: flex; justify-content: space-between; align-items: center; pad
 .heat-box { aspect-ratio: 1; background: var(--bg-input); border-radius: 3px; }
 .heat-box.filled { background: var(--accent-color); }
 
-input, select { width: 100%; padding: 14px; background: var(--bg-input); border: none; border-radius: var(--btn-radius); color: #fff; margin-bottom: 10px; box-sizing: border-box; font-size: 16px; }
 .input-row { display: flex; gap: 10px; }
