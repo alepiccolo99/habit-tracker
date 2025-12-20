@@ -1,4 +1,4 @@
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxfIzLJ9RjVnOsrYBjmRfcsJH5TA8LVF3ReA3Ec_NIIRe4Rt7443_QMAFxbVAShSISvwA/exec"; 
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwB49dnXc5wFyia7NTXHfgt0LJm6LX_nZWgssc_yEiY5UO6XtYoB71iUq06MxZ6QprvZA/exec"; 
 const TOKEN = "aleLifeTracker_1999";
 
 let appData = { habits: [], habitLogs: [], settings: [] };
@@ -7,8 +7,6 @@ let currentHabitId = null;
 
 document.addEventListener('DOMContentLoaded', () => {
     applyTheme(currentTheme);
-    // Initialize color picker value
-    document.getElementById('themeColorPicker').value = currentTheme;
     fetchData();
 });
 
@@ -21,13 +19,13 @@ async function fetchData() {
         const savedTheme = data.settings.find(s => s[0] === 'theme');
         if (savedTheme) {
             applyTheme(savedTheme[1]);
-            document.getElementById('themeColorPicker').value = savedTheme[1];
         }
         
         // Default View
         router('habits');
     } catch (e) {
         console.error(e);
+        document.getElementById('habits-list').innerText = "Loading failed.";
     }
 }
 
@@ -49,28 +47,22 @@ function applyTheme(color) {
 
 // --- ROUTING ---
 function router(viewId) {
-    // Close sidebar
     document.getElementById('sidebar').classList.remove('open');
     document.getElementById('overlay').style.display = 'none';
     
-    // Hide ALL views
     document.querySelectorAll('.view').forEach(el => el.classList.remove('active-view'));
-    // Show Target view
     const target = document.getElementById(viewId + '-view');
     if(target) target.classList.add('active-view');
     
-    // Update Header
     document.getElementById('page-title').innerText = viewId.charAt(0).toUpperCase() + viewId.slice(1);
     const actionArea = document.getElementById('header-action');
     actionArea.innerHTML = '';
     
-    // Header Buttons
+    // Header Buttons (The + Button)
     if (viewId === 'habits') {
         const addBtn = document.createElement('button');
-        addBtn.innerText = "+";
-        addBtn.style.fontSize = "28px";
-        addBtn.style.background = "none";
-        addBtn.style.border = "none";
+        addBtn.innerHTML = "+"; // Plus symbol
+        addBtn.className = "btn-header-add";
         addBtn.onclick = () => document.getElementById('add-habit-modal').style.display = 'block';
         actionArea.appendChild(addBtn);
         renderHabitDashboard();
@@ -99,6 +91,7 @@ function renderHabitDashboard() {
     const list = document.getElementById('habits-list');
     const header = document.getElementById('week-header');
     const days = getRecentDays(5);
+    const todayStr = new Date().toDateString(); // For comparison
     
     header.innerHTML = '<div></div>' + days.map(d => `
         <div>
@@ -115,7 +108,9 @@ function renderHabitDashboard() {
             ${days.map(d => {
                 const dateStr = d.toISOString().split('T')[0];
                 const checked = checkStatus(id, dateStr);
-                return `<div class="cell ${checked ? 'checked' : ''}" 
+                const isToday = d.toDateString() === todayStr;
+                
+                return `<div class="cell ${checked ? 'checked' : ''} ${isToday ? 'current-day' : ''}" 
                         onclick="toggleHabit('${id}', '${dateStr}', this)">
                         ${checked ? '✔' : ''}
                         </div>`;
@@ -140,9 +135,9 @@ async function toggleHabit(id, date, el) {
     } else {
         appData.habitLogs.push([id, date, 1]);
     }
-    // Refresh if detail is open
+    
     if(document.getElementById('habit-detail-modal').style.display === 'block') {
-        openHabitDetail(id); // Reload stats
+        openHabitDetail(id); 
     }
 }
 
@@ -155,7 +150,6 @@ function openHabitDetail(id) {
     document.getElementById('modal-habit-title').innerText = habit[1];
     document.getElementById('habit-detail-modal').style.display = 'block';
     
-    // Fill Edit Form
     document.getElementById('edit-name').value = habit[1];
     document.getElementById('edit-freq').value = habit[2] || 'Daily';
     document.getElementById('edit-target').value = habit[3] || 1;
@@ -176,27 +170,27 @@ function toggleEditHabit() {
     form.style.display = form.style.display === 'none' ? 'block' : 'none';
 }
 
-// --- STATS & CALENDAR ---
 function renderHabitStats(id) {
     const logs = appData.habitLogs.filter(l => l[0] == id).map(l => l[1].substring(0,10)).sort();
     
-    // Total
     document.getElementById('stat-total').innerText = logs.length;
     
-    // Streak
     let streak = 0;
     const today = new Date().toISOString().split('T')[0];
     let checkDate = new Date();
     if (logs.includes(today)) streak = 1;
-    while(true) {
+    
+    // Simple streak logic
+    let loopLimit = 365; // Safety break
+    while(loopLimit > 0) {
         checkDate.setDate(checkDate.getDate() - 1);
         const dateStr = checkDate.toISOString().split('T')[0];
         if (logs.includes(dateStr)) streak++;
         else if (dateStr !== today) break;
+        loopLimit--;
     }
     document.getElementById('stat-streak').innerText = streak;
     
-    // Completion Rate (Last 30 days)
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
     const recentLogs = logs.filter(d => new Date(d) >= thirtyDaysAgo);
@@ -209,29 +203,24 @@ function renderCalendar(id) {
     grid.innerHTML = '';
     
     const now = new Date();
-    // Headers (Start Monday: M T W T F S S)
     const days = ['M','T','W','T','F','S','S'];
     days.forEach(d => grid.innerHTML += `<div style="font-size:10px; color:#888">${d}</div>`);
     
-    // Set Month Title
+    // Fix: Show Current Month Name correctly
     document.getElementById('cal-month-name').innerText = now.toLocaleDateString('en-US', {month: 'long', year: 'numeric'});
     
     const year = now.getFullYear();
     const month = now.getMonth();
     
-    // Get Day of week for 1st of month (0=Sun, 1=Mon... we want Mon=0)
     let firstDayIndex = new Date(year, month, 1).getDay(); 
-    // Convert to Mon=0, Sun=6
+    // Convert Sun(0) to 6, Mon(1) to 0
     firstDayIndex = (firstDayIndex === 0) ? 6 : firstDayIndex - 1;
 
     const daysInMonth = new Date(year, month + 1, 0).getDate();
     
-    // Empty slots
     for(let i=0; i<firstDayIndex; i++) grid.innerHTML += '<div></div>';
     
-    // Days
     for(let i=1; i<=daysInMonth; i++) {
-        // Construct date manually to avoid timezone shifts
         const dStr = `${year}-${String(month+1).padStart(2,'0')}-${String(i).padStart(2,'0')}`;
         const isChecked = checkStatus(id, dStr);
         const isToday = i === now.getDate();
@@ -240,30 +229,34 @@ function renderCalendar(id) {
 }
 
 function renderHeatmap(id) {
+    // Re-fetch ID if called from dropdown (select passes value not id)
+    if(!id) id = currentHabitId;
+    
     const mode = document.getElementById('heatmap-select').value;
     const grid = document.getElementById('heatmap-grid');
     grid.innerHTML = '';
     
-    // Calculate start date
     const today = new Date();
     let startDate = new Date();
     
     if (mode === '3months') {
-        // Start from 1st of 3 months ago
         startDate.setMonth(today.getMonth() - 2); 
         startDate.setDate(1);
-    } else {
-        // Last Year
+    } else if (mode === 'year') {
         startDate.setFullYear(today.getFullYear() - 1);
+    } else if (mode === 'all') {
+        // Find first log ever for this habit
+        const logs = appData.habitLogs.filter(l => l[0] == id).map(l => l[1]).sort();
+        if(logs.length > 0) {
+            startDate = new Date(logs[0]);
+        } else {
+            startDate.setMonth(today.getMonth() - 1); // Default if empty
+        }
     }
 
-    // Set Grid Columns based on range
     const diffTime = Math.abs(today - startDate);
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     
-    // CSS Grid tweak for density
-    grid.style.gridTemplateColumns = `repeat(auto-fill, minmax(12px, 1fr))`;
-
     for(let i=0; i<=diffDays; i++) {
         const d = new Date(startDate);
         d.setDate(startDate.getDate() + i);
@@ -275,7 +268,6 @@ function renderHeatmap(id) {
     }
 }
 
-// --- ACTIONS ---
 async function saveHabitConfig() {
     const name = document.getElementById('edit-name').value;
     const freq = document.getElementById('edit-freq').value;
@@ -288,26 +280,22 @@ async function saveHabitConfig() {
         frequency: freq,
         target: target
     });
-    alert("Updated successfully");
+    alert("Saved");
     
-    // Update local data manually
     const habitIdx = appData.habits.findIndex(h => h[0] == currentHabitId);
     if(habitIdx > -1) {
-        appData.habits[habitIdx] = [currentHabitId, name, freq, target, false];
+        appData.habits[habitIdx][1] = name;
+        appData.habits[habitIdx][2] = freq;
+        appData.habits[habitIdx][3] = target;
     }
-    
     toggleEditHabit();
-    openHabitDetail(currentHabitId); // Refresh Title
+    openHabitDetail(currentHabitId);
 }
 
 async function deleteCurrentHabit() {
-    if(!confirm("Are you sure you want to delete this habit? All data will be lost.")) return;
-    
+    if(!confirm("Delete this habit?")) return;
     await sendData({ action: 'deleteHabit', id: currentHabitId });
-    
-    // Remove locally
     appData.habits = appData.habits.filter(h => h[0] != currentHabitId);
-    
     closeHabitModal();
 }
 
