@@ -1,4 +1,4 @@
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzI55AevpO-wNvXu-cioJjru_kUb_e27qsb0qhPvpv9STuXLT8ufdLxiZj-yX38yjpARw/exec"; 
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyCABTk0XxQbgaHn2L5FSoQX-5xJ5KEwvBXJry2rgp2YH7hi49j6hx_9sMuMBZH3t7NpQ/exec"; 
 const TOKEN = "aleLifeTracker_1999";
 
 let appData = { habits: [], habitLogs: [], settings: [] };
@@ -71,7 +71,8 @@ function router(viewId) {
     if (viewId === 'habits') {
         const addBtn = document.createElement('button');
         addBtn.innerHTML = "Add"; 
-        addBtn.className = "btn-header-add"; 
+        // FIX #3: Use 'btn-secondary' style same as Edit/Back
+        addBtn.className = "btn-secondary"; 
         addBtn.onclick = openAddHabitModal;
         actionArea.appendChild(addBtn);
         renderHabitDashboard();
@@ -111,13 +112,13 @@ function renderHabitDashboard() {
     const days = getRecentDays(5);
     const todayStr = new Date().toDateString(); 
     
-    // FIX: Apply highlight to the Header Div for today
+    // FIX #1: Highlight class applied to parent wrapper
     header.innerHTML = '<div></div>' + days.map(d => {
         const isToday = d.toDateString() === todayStr;
         return `
-        <div>
+        <div class="day-wrapper-header ${isToday ? 'current' : ''}">
             <div class="day-name">${d.toLocaleDateString('en-US', {weekday:'short'})}</div>
-            <div class="day-num ${isToday ? 'day-highlight' : ''}">${d.getDate()}</div>
+            <div class="day-num">${d.getDate()}</div>
         </div>
         `;
     }).join('');
@@ -130,7 +131,6 @@ function renderHabitDashboard() {
             ${days.map(d => {
                 const dateStr = d.toISOString().split('T')[0];
                 const checked = checkStatus(id, dateStr);
-                // Removed 'current-day' class from cell here
                 return `<div class="cell ${checked ? 'checked' : ''}" 
                         onclick="toggleHabit('${id}', '${dateStr}', this)">
                         ${checked ? '✔' : ''}
@@ -175,9 +175,7 @@ function openHabitDetail(id) {
     document.getElementById('modal-habit-title').innerText = habit[1];
     document.getElementById('habit-detail-modal').style.display = 'block';
     
-    // FIX: Ensure Pre-fill Logic works correctly
     document.getElementById('edit-name').value = habit[1];
-    // Match the select value exactly as stored (e.g. "Daily")
     document.getElementById('edit-freq').value = habit[2] || 'Daily';
     document.getElementById('edit-target').value = habit[3] || 1;
     
