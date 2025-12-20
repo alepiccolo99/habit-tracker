@@ -1,4 +1,4 @@
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwB49dnXc5wFyia7NTXHfgt0LJm6LX_nZWgssc_yEiY5UO6XtYoB71iUq06MxZ6QprvZA/exec"; 
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxB3OJDNUSWmyHpTCQmVWF9KwF1BLjyriPVXbz0rWSmyfhCllw3gISL89NpFdPqHMVv/exec"; 
 const TOKEN = "aleLifeTracker_1999";
 
 let appData = { habits: [], habitLogs: [], settings: [] };
@@ -12,26 +12,28 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 async function fetchData() {
-    // Show loading
+    // FIX: Ensure loader is visible (it is by default in HTML now)
     const loader = document.getElementById('loading-overlay');
-    if(loader) loader.style.display = 'flex';
-
+    
     try {
         const resp = await fetch(`${SCRIPT_URL}?token=${TOKEN}&action=getAll`);
         const data = await resp.json();
         appData = data;
         
+        // Settings apply
         const savedTheme = data.settings.find(s => s[0] === 'theme');
         if (savedTheme) {
             applyTheme(savedTheme[1]);
-            document.getElementById('themeColorPicker').value = savedTheme[1];
+            const picker = document.getElementById('themeColorPicker');
+            if(picker) picker.value = savedTheme[1];
         }
         
         router('habits');
     } catch (e) {
-        console.error(e);
+        console.error("Fetch Error:", e);
+        // Fallback: if offline, still try to show UI
     } finally {
-        // FIX Habits #1: Hide loading overlay
+        // FIX: Hide loading overlay only when done
         if(loader) loader.style.display = 'none';
     }
 }
@@ -77,7 +79,8 @@ function router(viewId) {
         const addBtn = document.createElement('button');
         addBtn.innerHTML = "Add"; 
         addBtn.className = "btn-header-add"; 
-        addBtn.onclick = () => document.getElementById('add-habit-modal').style.display = 'block';
+        // FIX: Call openAddHabitModal instead of direct style change
+        addBtn.onclick = openAddHabitModal;
         actionArea.appendChild(addBtn);
         renderHabitDashboard();
     }
@@ -105,8 +108,11 @@ function renderHabitDashboard() {
     const list = document.getElementById('habits-list');
     const header = document.getElementById('week-header');
     
-    if (!appData.habits || appData.habits.length === 0) {
-        list.innerHTML = `<div style="text-align:center; color:#555; margin-top:30px;">Tap "Add" to start.</div>`;
+    // FIX: Filter out empty rows or invalid data to prevent crashes
+    const validHabits = (appData.habits || []).filter(h => h[0] && h[1]);
+
+    if (validHabits.length === 0) {
+        list.innerHTML = `<div style="text-align:center; color:#555; margin-top:30px;">Tap "Add" to start tracking.</div>`;
         header.innerHTML = '';
         return;
     }
@@ -121,7 +127,7 @@ function renderHabitDashboard() {
         </div>
     `).join('');
 
-    list.innerHTML = appData.habits.map(h => {
+    list.innerHTML = validHabits.map(h => {
         const [id, name] = h;
         return `
         <div class="habit-row">
@@ -141,7 +147,8 @@ function renderHabitDashboard() {
 }
 
 function checkStatus(id, dateStr) {
-    return appData.habitLogs.some(l => l[0] == id && String(l[1]).startsWith(dateStr));
+    // String conversion ensures ID match (number vs string)
+    return appData.habitLogs.some(l => String(l[0]) === String(id) && String(l[1]).startsWith(dateStr));
 }
 
 async function toggleHabit(id, date, el) {
@@ -152,8 +159,10 @@ async function toggleHabit(id, date, el) {
     await sendData({ action: 'toggleHabit', habitId: id, date: date });
     
     if(isChecked) {
-        appData.habitLogs = appData.habitLogs.filter(l => !(l[0] == id && String(l[1]).startsWith(date)));
+        // Optimistic remove
+        appData.habitLogs = appData.habitLogs.filter(l => !(String(l[0]) === String(id) && String(l[1]).startsWith(date)));
     } else {
+        // Optimistic add
         appData.habitLogs.push([id, date, 1]);
     }
     
@@ -167,7 +176,7 @@ async function toggleHabit(id, date, el) {
 // --- HABIT DETAIL ---
 function openHabitDetail(id) {
     currentHabitId = id;
-    const habit = appData.habits.find(h => h[0] == id);
+    const habit = appData.habits.find(h => String(h[0]) === String(id));
     if(!habit) return;
     
     calendarOffsetDate = new Date();
@@ -175,7 +184,7 @@ function openHabitDetail(id) {
     document.getElementById('modal-habit-title').innerText = habit[1];
     document.getElementById('habit-detail-modal').style.display = 'block';
     
-    // FIX Habits #3: Pre-fill Edit Form Values
+    // Pre-fill Edit Form
     document.getElementById('edit-name').value = habit[1];
     document.getElementById('edit-freq').value = habit[2] || 'Daily';
     document.getElementById('edit-target').value = habit[3] || 1;
@@ -198,12 +207,17 @@ function toggleEditHabit() {
 }
 
 function renderHabitStats(id) {
-    const logs = appData.habitLogs.filter(l => l[0] == id).map(l => l[1].substring(0,10)).sort();
+    const logs = appData.habitLogs
+        .filter(l => String(l[0]) === String(id))
+        .map(l => String(l[1]).substring(0,10))
+        .sort();
+        
     document.getElementById('stat-total').innerText = logs.length;
     
     let streak = 0;
     const today = new Date().toISOString().split('T')[0];
     let checkDate = new Date();
+    
     if (logs.includes(today)) streak = 1;
     
     let loopLimit = 365; 
@@ -277,7 +291,10 @@ function renderHeatmap(id) {
         startDate.setFullYear(today.getFullYear() - 1);
     } else if (mode === 'all') {
         startDate = new Date('2025-01-01');
-        const logs = appData.habitLogs.filter(l => l[0] == id).map(l => l[1]).sort();
+        const logs = appData.habitLogs
+            .filter(l => String(l[0]) === String(id))
+            .map(l => String(l[1]))
+            .sort();
         if(logs.length > 0) {
             const firstLog = new Date(logs[0]);
             if (firstLog < startDate) startDate = firstLog;
@@ -312,7 +329,7 @@ async function saveHabitConfig() {
     });
     alert("Saved");
     
-    const habitIdx = appData.habits.findIndex(h => h[0] == currentHabitId);
+    const habitIdx = appData.habits.findIndex(h => String(h[0]) === String(currentHabitId));
     if(habitIdx > -1) {
         appData.habits[habitIdx][1] = name;
         appData.habits[habitIdx][2] = freq;
@@ -325,13 +342,22 @@ async function saveHabitConfig() {
 async function deleteCurrentHabit() {
     if(!confirm("Delete this habit?")) return;
     await sendData({ action: 'deleteHabit', id: currentHabitId });
-    appData.habits = appData.habits.filter(h => h[0] != currentHabitId);
+    appData.habits = appData.habits.filter(h => String(h[0]) !== String(currentHabitId));
     closeHabitModal();
+}
+
+// FIX: New function to reset form, then show modal
+function openAddHabitModal() {
+    document.getElementById('newHabitName').value = "";
+    document.getElementById('newHabitFreq').value = "Daily";
+    document.getElementById('newHabitTarget').value = "1";
+    document.getElementById('add-habit-modal').style.display = 'block';
 }
 
 async function handleAddHabit() {
     const name = document.getElementById('newHabitName').value;
     if(!name) return;
+    
     const id = Date.now().toString();
     const freq = document.getElementById('newHabitFreq').value;
     const target = document.getElementById('newHabitTarget').value;
