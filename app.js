@@ -4,6 +4,7 @@ const TOKEN = "aleLifeTracker_1999";
 let appData = { habits: [], habitLogs: [], settings: [] };
 let currentTheme = localStorage.getItem('theme') || '#0a84ff';
 let currentHabitId = null; 
+let calendarOffsetDate = new Date(); // FIX Habits #5: Navigation State
 
 document.addEventListener('DOMContentLoaded', () => {
     applyTheme(currentTheme);
@@ -22,11 +23,12 @@ async function fetchData() {
             document.getElementById('themeColorPicker').value = savedTheme[1];
         }
         
-        // Load default view
+        // Default View
         router('habits');
     } catch (e) {
         console.error(e);
-        document.getElementById('habits-list').innerText = "Loading failed.";
+        // FIX Habits #1: Don't show "Loading failed", show empty if no habits
+        document.getElementById('habits-list').innerHTML = `<div style="text-align:center; color:#888; padding:20px;">No habits found. Click + to add one.</div>`;
     }
 }
 
@@ -44,35 +46,29 @@ function setTheme(color) {
 function applyTheme(color) {
     currentTheme = color;
     document.documentElement.style.setProperty('--accent-color', color);
+    
+    // FIX Settings #2: Show HEX
+    const hexDisplay = document.getElementById('color-hex-display');
+    if(hexDisplay) hexDisplay.innerText = `Picked color: ${color.toUpperCase()}`;
 }
 
-// --- ROUTING & NAVIGATION FIX ---
+// --- ROUTING ---
 function router(viewId) {
-    // 1. Close Sidebar / Overlay
     document.getElementById('sidebar').classList.remove('open');
     document.getElementById('overlay').style.display = 'none';
     
-    // 2. Switch Views (Hide all, show target)
     document.querySelectorAll('.view').forEach(el => el.classList.remove('active-view'));
     const target = document.getElementById(viewId + '-view');
     if(target) target.classList.add('active-view');
     
-    // 3. FIX: Sidebar Active State
-    // Remove 'active' from ALL sidebar buttons
     document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
-    
-    // Add 'active' ONLY to the current button (using the ID we added in HTML)
     const activeBtn = document.getElementById('nav-' + viewId);
-    if(activeBtn) {
-        activeBtn.classList.add('active');
-    }
+    if(activeBtn) activeBtn.classList.add('active');
     
-    // 4. Update Header
     document.getElementById('page-title').innerText = viewId.charAt(0).toUpperCase() + viewId.slice(1);
     const actionArea = document.getElementById('header-action');
     actionArea.innerHTML = '';
     
-    // Header Actions (Habits only)
     if (viewId === 'habits') {
         const addBtn = document.createElement('button');
         addBtn.innerHTML = "+"; 
@@ -104,6 +100,14 @@ function getRecentDays(n) {
 function renderHabitDashboard() {
     const list = document.getElementById('habits-list');
     const header = document.getElementById('week-header');
+    
+    // FIX Habits #1: Handle empty list gracefully
+    if (!appData.habits || appData.habits.length === 0) {
+        list.innerHTML = `<div style="text-align:center; color:#555; margin-top:30px;">No habits yet.</div>`;
+        header.innerHTML = '';
+        return;
+    }
+
     const days = getRecentDays(5);
     const todayStr = new Date().toDateString(); 
     
@@ -151,7 +155,10 @@ async function toggleHabit(id, date, el) {
     }
     
     if(document.getElementById('habit-detail-modal').style.display === 'block') {
-        openHabitDetail(id); 
+        // Just refresh stats/calendar, don't reset date
+        renderHabitStats(id);
+        renderCalendar(id);
+        renderHeatmap(id);
     }
 }
 
@@ -161,6 +168,9 @@ function openHabitDetail(id) {
     const habit = appData.habits.find(h => h[0] == id);
     if(!habit) return;
     
+    // FIX Habits #5: Reset calendar to current month when opening
+    calendarOffsetDate = new Date();
+
     document.getElementById('modal-habit-title').innerText = habit[1];
     document.getElementById('habit-detail-modal').style.display = 'block';
     
@@ -186,7 +196,6 @@ function toggleEditHabit() {
 
 function renderHabitStats(id) {
     const logs = appData.habitLogs.filter(l => l[0] == id).map(l => l[1].substring(0,10)).sort();
-    
     document.getElementById('stat-total').innerText = logs.length;
     
     let streak = 0;
@@ -211,18 +220,26 @@ function renderHabitStats(id) {
     document.getElementById('stat-rate').innerText = rate + "%";
 }
 
+// FIX Habits #5: Calendar Navigation
+function changeCalendarMonth(delta) {
+    calendarOffsetDate.setMonth(calendarOffsetDate.getMonth() + delta);
+    renderCalendar(currentHabitId);
+}
+
 function renderCalendar(id) {
     const grid = document.getElementById('calendar-grid');
     grid.innerHTML = '';
     
-    const now = new Date();
+    // Use the offset date, not new Date()
+    const displayDate = new Date(calendarOffsetDate);
+    
     const days = ['M','T','W','T','F','S','S']; 
     days.forEach(d => grid.innerHTML += `<div style="font-size:10px; color:#888">${d}</div>`);
     
-    document.getElementById('cal-month-name').innerText = now.toLocaleDateString('en-US', {month: 'long', year: 'numeric'});
+    document.getElementById('cal-month-name').innerText = displayDate.toLocaleDateString('en-US', {month: 'long', year: 'numeric'});
     
-    const year = now.getFullYear();
-    const month = now.getMonth();
+    const year = displayDate.getFullYear();
+    const month = displayDate.getMonth();
     
     let firstDayIndex = new Date(year, month, 1).getDay(); 
     firstDayIndex = (firstDayIndex === 0) ? 6 : firstDayIndex - 1;
@@ -231,10 +248,13 @@ function renderCalendar(id) {
     
     for(let i=0; i<firstDayIndex; i++) grid.innerHTML += '<div></div>';
     
+    const now = new Date();
+    const isCurrentMonth = (now.getFullYear() === year && now.getMonth() === month);
+
     for(let i=1; i<=daysInMonth; i++) {
         const dStr = `${year}-${String(month+1).padStart(2,'0')}-${String(i).padStart(2,'0')}`;
         const isChecked = checkStatus(id, dStr);
-        const isToday = i === now.getDate();
+        const isToday = isCurrentMonth && (i === now.getDate());
         grid.innerHTML += `<div class="cal-day ${isChecked?'active':''} ${isToday?'today':''}">${i}</div>`;
     }
 }
