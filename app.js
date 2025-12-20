@@ -1,4 +1,4 @@
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyCABTk0XxQbgaHn2L5FSoQX-5xJ5KEwvBXJry2rgp2YH7hi49j6hx_9sMuMBZH3t7NpQ/exec"; 
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwB49dnXc5wFyia7NTXHfgt0LJm6LX_nZWgssc_yEiY5UO6XtYoB71iUq06MxZ6QprvZA/exec"; 
 const TOKEN = "aleLifeTracker_1999";
 
 let appData = { habits: [], habitLogs: [], settings: [] };
@@ -47,6 +47,17 @@ function setTheme(color) {
 function applyTheme(color) {
     currentTheme = color;
     document.documentElement.style.setProperty('--accent-color', color);
+    
+    // FIX #4: Calculate RGBA for transparent background
+    // Assumes color is HEX format (#RRGGBB)
+    if(color.startsWith('#') && color.length === 7) {
+        const r = parseInt(color.substr(1,2), 16);
+        const g = parseInt(color.substr(3,2), 16);
+        const b = parseInt(color.substr(5,2), 16);
+        const rgbaVal = `rgba(${r}, ${g}, ${b}, 0.2)`;
+        document.documentElement.style.setProperty('--accent-color-bg', rgbaVal);
+    }
+    
     const previewBox = document.getElementById('color-preview-box');
     if(previewBox) previewBox.style.backgroundColor = color;
 }
@@ -71,7 +82,7 @@ function router(viewId) {
     if (viewId === 'habits') {
         const addBtn = document.createElement('button');
         addBtn.innerHTML = "Add"; 
-        // FIX #3: Use 'btn-secondary' style same as Edit/Back
+        // FIX #3: Use 'btn-secondary' to match Edit/Cancel buttons exactly
         addBtn.className = "btn-secondary"; 
         addBtn.onclick = openAddHabitModal;
         actionArea.appendChild(addBtn);
@@ -112,7 +123,7 @@ function renderHabitDashboard() {
     const days = getRecentDays(5);
     const todayStr = new Date().toDateString(); 
     
-    // FIX #1: Highlight class applied to parent wrapper
+    // FIX #1: Highlight applied to the whole wrapper (.day-wrapper-header)
     header.innerHTML = '<div></div>' + days.map(d => {
         const isToday = d.toDateString() === todayStr;
         return `
