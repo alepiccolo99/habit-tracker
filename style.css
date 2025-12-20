@@ -32,11 +32,13 @@ button, .stat-val {
     color: var(--text-primary); 
 }
 
-/* FIX Habits #3: Force tick color to be User Accent Color */
+/* FIX Habits #3: Force tick color */
 .cell.checked {
     color: var(--accent-color) !important;
     background: rgba(255, 255, 255, 0.1); 
     font-weight: 800;
+    /* Extra safeguard to ensure the glyph takes the color */
+    -webkit-text-fill-color: var(--accent-color); 
 }
 
 .cell.current-day {
@@ -72,7 +74,7 @@ button, .stat-val {
     justify-content: center;
 }
 
-/* FIX Habits #2: "Add" Button White Text */
+/* FIX Habits #1: "Add" Button White Text */
 .btn-header-add {
     height: 32px;
     padding: 0 16px;
@@ -80,7 +82,7 @@ button, .stat-val {
     font-size: 14px;
     font-weight: 600;
     background: #3a3a3c !important; 
-    color: #ffffff !important; /* White text requested */
+    color: #ffffff !important; /* Force White */
     display: flex;
     align-items: center;
     justify-content: center;
@@ -123,15 +125,13 @@ button, .stat-val {
 }
 input[type="color"] { position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
 
-/* FIX Settings #1: Color Preview Rectangle */
+/* FIX Settings #2: No Border */
 .color-preview-box {
-    width: 40px;
-    height: 20px;
-    border-radius: 4px;
+    width: 30px;
+    height: 30px;
+    border-radius: 6px;
     display: inline-block;
-    vertical-align: middle;
-    margin-left: 10px;
-    border: 1px solid #555;
+    border: none; /* No border as requested */
 }
 
 input, select { 
