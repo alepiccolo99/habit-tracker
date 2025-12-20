@@ -102,11 +102,20 @@ function renderHabits() {
     const header = document.getElementById('week-header');
     const days = getWeekDays();
 
-    // Header Giorni
+    // Header Giorni con nuovo stile
     header.innerHTML = '<div class="habit-name-spacer"></div>' + 
-        days.map(d => `<div>${new Date(d).toLocaleDateString('it', {weekday:'short'})}<br>${new Date(d).getDate()}</div>`).join('');
+        days.map(d => {
+            const dateObj = new Date(d);
+            // Usa 'it-IT' per i giorni in italiano
+            const dayName = dateObj.toLocaleDateString('it-IT', {weekday:'short'}).toUpperCase();
+            const dayNumber = dateObj.getDate();
+            return `<div>
+                        <div class="day-label">${dayName}</div>
+                        <div class="day-number">${dayNumber}</div>
+                    </div>`;
+        }).join('');
 
-    // Lista
+    // Lista Habits (Rimane simile, ma il CSS ora la gestisce meglio)
     list.innerHTML = appData.habits.map(h => {
         const habitId = h[0];
         const habitName = h[1];
@@ -114,13 +123,13 @@ function renderHabits() {
         <div class="habit-row">
             <div class="habit-label">${habitName}</div>
             ${days.map(d => {
-                // Controllo log incrociato (HabitID e Data)
                 const isChecked = appData.habitLogs.some(l => 
                     l[0] == habitId && new Date(l[1]).toISOString().split('T')[0] === d
                 );
+                // Usiamo ✓ per checked, nulla per empty
                 return `<div class="cell ${isChecked ? 'checked' : 'empty'}" 
                         onclick="toggleHabit('${habitId}', '${d}', this)">
-                    ${isChecked ? '✓' : '✕'}
+                    ${isChecked ? '✓' : ''}
                 </div>`;
             }).join('')}
         </div>`;
