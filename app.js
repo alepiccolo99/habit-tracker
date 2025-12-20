@@ -27,8 +27,8 @@ async function fetchData() {
         router('habits');
     } catch (e) {
         console.error(e);
-        // FIX Habits #1: Do not show "Loading failed" if empty. Just clear.
-        document.getElementById('habits-list').innerHTML = "";
+        // FIX Habits #1: Don't show "Loading failed". Show nothing or empty state.
+        document.getElementById('habits-list').innerHTML = ""; 
     }
 }
 
@@ -71,7 +71,7 @@ function router(viewId) {
     
     if (viewId === 'habits') {
         const addBtn = document.createElement('button');
-        // FIX Habits #2: Text "Add" instead of +
+        // FIX Habits #2: Text "Add"
         addBtn.innerHTML = "Add"; 
         addBtn.className = "btn-header-add"; 
         addBtn.onclick = () => document.getElementById('add-habit-modal').style.display = 'block';
@@ -102,8 +102,9 @@ function renderHabitDashboard() {
     const list = document.getElementById('habits-list');
     const header = document.getElementById('week-header');
     
+    // FIX Habits #1: Clean handling of empty state
     if (!appData.habits || appData.habits.length === 0) {
-        list.innerHTML = `<div style="text-align:center; color:#555; margin-top:30px;">Tap "Add" to start.</div>`;
+        list.innerHTML = ""; // Show nothing as requested
         header.innerHTML = '';
         return;
     }
@@ -167,7 +168,7 @@ function openHabitDetail(id) {
     const habit = appData.habits.find(h => h[0] == id);
     if(!habit) return;
     
-    // Reset calendar to now when opening
+    // Reset calendar to now
     calendarOffsetDate = new Date();
 
     document.getElementById('modal-habit-title').innerText = habit[1];
@@ -219,7 +220,7 @@ function renderHabitStats(id) {
     document.getElementById('stat-rate').innerText = rate + "%";
 }
 
-// FIX Habits #5: Calendar Navigation
+// FIX Habits #4: Calendar Navigation
 function changeCalendarMonth(delta) {
     calendarOffsetDate.setMonth(calendarOffsetDate.getMonth() + delta);
     renderCalendar(currentHabitId);
