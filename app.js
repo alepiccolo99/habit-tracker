@@ -1,4 +1,4 @@
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyuCMT2n5yqUgj3-G72mSsWG_5ocXipaC4GDM77zDCgKsoG0HRBT1JIgxNWCWqhlq2rRw/exec"; 
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyRbSlMIzyd-3hAzirBIkQub8CnYriwoAIhBbNvOwnhNeKWrM80IEy0J7NrZLWqET9K_g/exec"; 
 const TOKEN = "aleLifeTracker_1999";
 
 let appData = { habits: [], habitLogs: [], settings: [] };
@@ -91,7 +91,10 @@ function renderHabitDashboard() {
             ${days.map(d => {
                 const dateStr = getLocalDateString(d);
                 const checked = appData.habitLogs.some(l => String(l[0]) === String(id) && String(l[1]) === dateStr);
-                return `<div class="cell ${checked ? 'checked' : ''}" onclick="toggleHabit('${id}', '${dateStr}', this)">${checked ? '✔' : ''}</div>`;
+                // LOGIC CHANGE: X if empty/unchecked, ✔ if checked
+                const symbol = checked ? '✔' : '✕';
+                const className = checked ? 'checked' : '';
+                return `<div class="cell ${className}" onclick="toggleHabit('${id}', '${dateStr}', this)">${symbol}</div>`;
             }).join('')}
         </div>`;
     }).join('');
@@ -102,10 +105,10 @@ function renderHabitDashboard() {
 async function toggleHabit(id, dateStr, el) {
     const isChecked = el.classList.contains('checked');
     
-    // Optimistic UI
+    // Optimistic UI Update (Swap symbols)
     if (isChecked) {
         el.classList.remove('checked');
-        el.innerText = '';
+        el.innerText = '✕';
         appData.habitLogs = appData.habitLogs.filter(l => !(String(l[0]) === String(id) && String(l[1]) === dateStr));
     } else {
         el.classList.add('checked');
