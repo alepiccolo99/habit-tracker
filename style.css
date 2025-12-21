@@ -24,29 +24,54 @@ header {
     position: sticky; top: 0;
     background: rgba(0,0,0,0.85); backdrop-filter: blur(12px);
     z-index: 100;
-    /* Removed border-bottom as requested */
 }
 header h1 { font-size: 20px; font-weight: 700; margin: 0; }
-.icon-btn { background: none; border: none; color: var(--text-secondary); cursor: pointer; padding: 5px; }
+.icon-btn { background: none; border: none; cursor: pointer; padding: 5px; display: flex; align-items: center; justify-content: center;}
+#header-drop-icon { color: var(--accent-color); filter: drop-shadow(0 0 5px rgba(0,0,0,0.5)); }
+
+/* Add Button (Dark Gray Circle, Black Icon) */
+.add-btn-circle {
+    background-color: #3a3a3c; /* Dark Gray */
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    border: none;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+.add-btn-circle:active { background-color: #48484a; }
 
 /* Grid & Layout */
 .main-container { padding: 10px 16px 40px 16px; max-width: 600px; margin: 0 auto; }
 
-.habit-row, .days-row { 
+.days-row { 
+    display: grid; 
+    grid-template-columns: 1fr repeat(5, 42px); 
+    gap: 2px; 
+    padding: 0 8px; 
+    margin-bottom: 0; 
+    height: auto;
+}
+
+/* List Container with margin top to separate from dates */
+#habits-list {
+    margin-top: 15px; /* Separation from dates */
+}
+
+.habit-row { 
     display: grid; 
     grid-template-columns: 1fr repeat(5, 42px); 
     gap: 2px; 
     align-items: center;
     background-color: var(--bg-card);
     border-radius: var(--card-radius);
-    padding: 5px 8px; /* Adjusted padding */
-    margin-bottom: 8px;
-    height: 44px; /* Reduced height as requested */
+    padding: 0 8px; 
+    margin-bottom: 6px;
+    height: 40px; /* Reduced Height */
 }
-.days-row { background: transparent; height: auto; padding: 0 8px; margin-bottom: 0; }
 
 .habit-label { 
-    font-weight: 500; font-size: 16px; padding-left: 10px;
+    font-weight: 500; font-size: 15px; padding-left: 10px;
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis; 
 }
 
@@ -57,24 +82,24 @@ header h1 { font-size: 20px; font-weight: 700; margin: 0; }
 .day-col-header.today { color: var(--accent-color); }
 
 .cell { 
-    height: 38px; width: 38px; border-radius: 8px;
+    height: 100%; width: 100%;
     display: flex; align-items: center; justify-content: center; 
-    font-size: 18px; 
-    font-weight: 400; 
     cursor: pointer; 
     margin: 0 auto;
-    color: #3a3a3c; /* Gray X by default */
-    background: transparent; /* Transparent background */
+    font-family: Arial, sans-serif; /* Ensures symbols look standard */
+    font-size: 20px; /* Same size for X and Tick */
+    color: #48484a; /* Default Dim Gray for X */
+    background: transparent;
     transition: transform 0.1s;
+    user-select: none;
 }
 .cell.checked { 
-    color: var(--accent-color); /* Colored Tick */
-    font-weight: 800; 
-    font-size: 20px;
+    color: var(--accent-color); /* Theme Color for Tick */
+    font-weight: 400; /* Regular weight for clean look */
 }
 .cell:active { transform: scale(0.9); }
 
-/* Custom Select Dropdown (V arrow only) */
+/* Custom Select Dropdown */
 select { 
     width: 100%; padding: 12px; background: var(--bg-input); border: none; border-radius: 10px; color: #fff; margin-bottom: 10px; box-sizing: border-box; font-size: 16px;
     appearance: none; -webkit-appearance: none; -moz-appearance: none;
