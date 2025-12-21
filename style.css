@@ -1,18 +1,20 @@
 :root {
     --bg-main: #000000;
     --bg-card: #1c1c1e;
-    --bg-input: #2c2c2e;
+    --bg-input: #2c2c2e; /* Used for cell backgrounds */
     --text-primary: #ffffff;
     --text-secondary: #8e8e93;
+    --text-muted: #48484a; /* For the 'X' mark */
     --border-color: #38383a;
     
     /* Default Accent */
     --accent-color: #0a84ff; 
-    /* Default Accent Background (will be updated by JS) */
-    --accent-color-bg: rgba(10, 132, 255, 0.2); 
+    /* Default Accent Background */
+    --accent-color-bg: rgba(10, 132, 255, 0.15); 
     
     --card-radius: 16px;
     --btn-radius: 12px;
+    --cell-radius: 8px; /* Slightly rounded squares */
 }
 
 body {
@@ -34,12 +36,20 @@ button, .stat-val {
     color: var(--text-primary); 
 }
 
-.cell.checked {
-    background-color: var(--accent-color-bg) !important;
-    color: var(--accent-color) !important;
-    -webkit-text-fill-color: var(--accent-color) !important;
-    font-weight: 900;
-    opacity: 1;
+/* --- GRID LAYOUT UPDATE --- */
+/* Config: 1fr for Name (takes all avail space), 
+   5 columns of 36px for Ticks (tight & compact) 
+*/
+.habit-row, .days-row { 
+    display: grid; 
+    grid-template-columns: 1fr repeat(5, 36px); 
+    gap: 6px; /* Space between boxes */
+    margin-bottom: 8px; 
+    align-items: center; 
+}
+
+.days-row {
+    margin-bottom: 12px;
 }
 
 /* Header Day Highlight wrapper */
@@ -48,81 +58,81 @@ button, .stat-val {
     flex-direction: column; 
     align-items: center; 
     justify-content: center;
-    border-radius: 10px;
-    padding: 6px 4px;    
-    border: 1px solid transparent;
+    padding: 0;    
+    font-size: 11px;
+    color: var(--text-secondary);
 }
+
+.day-name { text-transform: uppercase; margin-bottom: 2px; }
+.day-num { font-weight: 600; font-size: 13px; }
 
 .day-wrapper-header.current {
-    border: 1px solid var(--accent-color);
     color: var(--accent-color);
-    background: rgba(255,255,255,0.05);
 }
 
-/* Reduced Height for Habits and Ticks */
+/* --- HABIT CELLS STYLING --- */
+
+/* Name Box */
 .habit-label { 
-    background: var(--bg-card); 
-    min-height: 36px;
+    background: var(--bg-input); 
+    height: 40px; /* Consistent height */
     display: flex; 
     align-items: center; 
-    padding-left: 15px; 
-    border-radius: 8px;
+    padding-left: 12px; 
+    border-radius: var(--cell-radius);
     font-weight: 500; 
     cursor: pointer; 
     font-size: 15px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: var(--text-primary);
 }
 
+/* Tick/X Box */
 .cell { 
-    background: var(--bg-card); 
-    min-height: 36px;
-    border-radius: 8px; 
+    background: var(--bg-input); 
+    height: 40px; /* Square-ish look */
+    border-radius: var(--cell-radius); 
     display: flex; 
     align-items: center; 
     justify-content: center; 
-    font-size: 18px; 
+    font-size: 16px; 
     cursor: pointer; 
     transition: 0.2s; 
-    color: transparent; 
+    
+    /* Default state is the 'X' color */
+    color: var(--text-muted); 
+}
+
+/* Checked State */
+.cell.checked {
+    background-color: var(--accent-color-bg) !important;
+    color: var(--accent-color) !important;
+    font-weight: 900;
 }
 
 #loading-overlay {
     position: fixed;
-    top: 0; 
-    left: 0;
-    width: 100%;
-    height: 100%;
+    top: 0; left: 0; width: 100%; height: 100%;
     background-color: #000000;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
     z-index: 9999;
-    transition: opacity 0.3s ease;
 }
 
 .spinner {
-    width: 40px;
-    height: 40px;
+    width: 40px; height: 40px;
     border: 4px solid rgba(255, 255, 255, 0.1);
     border-top: 4px solid var(--accent-color);
     border-radius: 50%;
     animation: spin 1s linear infinite;
     margin-bottom: 15px;
 }
+@keyframes spin { 100% { transform: rotate(360deg); } }
+.loading-text { color: var(--text-secondary); font-size: 14px; font-weight: 500; }
 
-@keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-}
-
-.loading-text {
-    color: var(--text-secondary);
-    font-size: 14px;
-    letter-spacing: 0.5px;
-    font-weight: 500;
-}
-
-/* --- BUTTONS --- */
+/* --- BUTTONS & INPUTS --- */
 .btn-primary {
     background: var(--accent-color) !important;
     color: #000 !important;
@@ -145,63 +155,22 @@ button, .stat-val {
     cursor: pointer;
     font-weight: 600;
     font-size: 14px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    display: flex; align-items: center; justify-content: center;
 }
 
-.btn-text-gray {
-    color: #8e8e93 !important;
-    background: none;
-    border: none;
-    font-size: 16px;
-    cursor: pointer;
-}
-
-/* --- SETTINGS & INPUTS --- */
 .color-picker-wrapper { position: relative; width: 100%; box-sizing: border-box; }
 .btn-picker { 
-    width: 100%; 
-    background: var(--bg-input); 
-    color: var(--text-primary); 
-    padding: 15px; 
-    border-radius: var(--btn-radius); 
-    text-align: center; 
-    font-weight: 600; 
-    cursor: pointer; 
-    display: block; 
-    box-sizing: border-box; 
+    width: 100%; background: var(--bg-input); color: var(--text-primary); 
+    padding: 15px; border-radius: var(--btn-radius); text-align: center; 
+    font-weight: 600; cursor: pointer; display: block; box-sizing: border-box; 
 }
 input[type="color"] { position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
-
-.color-preview-box {
-    width: 30px;
-    height: 30px;
-    border-radius: 6px;
-    display: inline-block;
-    border: none;
-}
+.color-preview-box { width: 30px; height: 30px; border-radius: 6px; display: inline-block; border: none; }
 
 input, select { 
-    width: 100%; 
-    padding: 14px; 
-    background: var(--bg-input); 
-    border: none; 
-    border-radius: var(--btn-radius); 
-    color: #fff; 
-    margin-bottom: 10px; 
-    box-sizing: border-box; 
-    font-size: 16px; 
-}
-
-select {
-    -webkit-appearance: none;
-    appearance: none;
-    background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23FFFFFF%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
-    background-repeat: no-repeat;
-    background-position: right 15px top 50%;
-    background-size: 12px auto;
-    padding-right: 40px;
+    width: 100%; padding: 14px; background: var(--bg-input); 
+    border: none; border-radius: var(--btn-radius); color: #fff; 
+    margin-bottom: 10px; box-sizing: border-box; font-size: 16px; 
 }
 
 /* --- LAYOUT --- */
@@ -210,28 +179,9 @@ select {
 .view.active-view { display: block; animation: fadeIn 0.3s ease-out; }
 @keyframes fadeIn { from { opacity:0; transform:translateY(5px); } to { opacity:1; transform:translateY(0); } }
 
-/* CARD STYLING & SYMMETRY FIX */
-.card { 
-    background: var(--bg-card); 
-    padding: 20px; 
-    border-radius: var(--card-radius); 
-    margin-bottom: 15px; 
-}
-
-/* FIX: Ensure Headers are symmetrical inside cards */
-.card h3 {
-    margin-top: 0;
-    margin-bottom: 15px;
-    font-size: 18px;
-    font-weight: 600;
-    letter-spacing: 0.3px;
-}
-
-.card p {
-    margin-top: 0;
-    color: var(--text-secondary);
-}
-
+.card { background: var(--bg-card); padding: 20px; border-radius: var(--card-radius); margin-bottom: 15px; }
+.card h3 { margin-top: 0; margin-bottom: 15px; font-size: 18px; font-weight: 600; }
+.card p { margin-top: 0; color: var(--text-secondary); }
 .transparent-card { background: transparent; padding: 0; }
 
 header { display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; position: sticky; top: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(10px); z-index: 90; }
@@ -244,10 +194,6 @@ header { display: flex; justify-content: space-between; align-items: center; pad
 .nav-btn { width: 100%; padding: 15px 20px; background: none; border: none; text-align: left; color: var(--text-secondary); font-size: 16px; cursor: pointer; }
 #overlay { position: fixed; inset:0; background: rgba(0,0,0,0.5); z-index: 900; display: none; }
 
-/* Grid Styles */
-.days-row { display: grid; grid-template-columns: 1fr repeat(5, 45px); gap: 5px; margin-bottom: 10px; text-align: center; }
-.habit-row { display: grid; grid-template-columns: 1fr repeat(5, 45px); gap: 5px; margin-bottom: 8px; align-items: stretch; }
-
 .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 2000; display: none; overflow-y: auto; padding-bottom: 40px;}
 .modal-header { display: flex; justify-content: space-between; padding: 20px; align-items: center; position: sticky; top: 0; background: #000; z-index: 10; border-bottom: 1px solid var(--border-color); }
 .modal-content { padding: 20px; max-width: 600px; margin: 0 auto; }
@@ -257,7 +203,6 @@ header { display: flex; justify-content: space-between; align-items: center; pad
 .stat-val { font-size: 24px; font-weight: 700; margin-bottom: 5px; }
 .stat-label { font-size: 12px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 1px; }
 
-/* Calendar & Heatmap */
 .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; margin-top: 10px; text-align: center; }
 .cal-day { aspect-ratio: 1; display: flex; align-items: center; justify-content: center; border-radius: 50%; font-size: 14px; }
 .cal-day.active { background: var(--accent-color); color: #000; font-weight: bold; }
