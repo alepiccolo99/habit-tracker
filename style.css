@@ -66,9 +66,9 @@ body {
     background: var(--bg-input); 
     color: var(--accent-color);
 }
-.cell-value.empty { background: transparent; color: var(--text-muted); }
+.cell-value.empty { background: transparent; color: var(--text-muted); font-size: 18px; }
 
-/* --- CHART (SVG) --- */
+/* --- CHART (Native SVG) --- */
 .chart-container {
     width: 100%;
     height: 250px;
@@ -77,9 +77,9 @@ body {
 }
 svg { width: 100%; height: 100%; overflow: visible; }
 .chart-line { fill: none; stroke: var(--accent-color); stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
-.chart-goal-line { stroke: #48484a; stroke-width: 1; stroke-dasharray: 4 4; }
+.chart-goal-line { stroke: #48484a; stroke-width: 1.5; stroke-dasharray: 4 4; opacity: 0.8; }
 .chart-axis { stroke: var(--border-color); stroke-width: 1; }
-.chart-text { fill: var(--text-secondary); font-size: 10px; }
+.chart-text { fill: var(--text-secondary); font-size: 10px; font-family: monospace;}
 
 /* --- STANDARD UI --- */
 .btn-primary { background: var(--accent-color) !important; color: #000 !important; border: none; border-radius: 30px; padding: 16px 24px; width: 100%; font-weight: 700; margin-top: 10px; }
