@@ -1,4 +1,4 @@
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz9kBGlln9UCdCkypU8HsDTCUGHJAWRd-M0tppoSNuKhEFA6jKEr9Se4w80SKBLaV3lqg/exec"; 
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbybQvYzPIvCXhzIUZY3mXbeFx9VNjTekj4yjXIjsn69lZJ-SrqAfSJ17nllZHVCd1nvnQ/exec"; 
 const TOKEN = "aleLifeTracker_1999";
 
 let appData = { habits: [], habitLogs: [], healthMetrics: [], healthLogs: [], settings: [] };
@@ -75,7 +75,7 @@ function toggleSidebar() {
     document.getElementById('overlay').style.display = open ? 'none' : 'block';
 }
 
-// --- HABITS DASHBOARD & LOGIC (Condensed for brevity, kept full functionality) ---
+// --- HABITS DASHBOARD ---
 function getRecentDays(n) {
     const dates = [];
     for(let i=0; i<n; i++) {
@@ -128,13 +128,13 @@ async function toggleHabit(id, date, el) {
     if(document.getElementById('habit-detail-modal').style.display === 'block') { renderHabitStats(id); renderCalendar(id); renderHeatmap(id); }
 }
 
-// --- HEALTH DASHBOARD & LOGIC ---
+// --- HEALTH DASHBOARD ---
 
 function renderHealthDashboard() {
     const list = document.getElementById('health-list');
     const header = document.getElementById('health-week-header');
     
-    // HealthMetrics structure: id, name, unit, goal, archived
+    // Safety check for metrics array
     const validMetrics = (appData.healthMetrics || []).filter(m => m[0] && m[1] && m[4] !== true);
 
     if (validMetrics.length === 0) {
@@ -166,7 +166,6 @@ function renderHealthDashboard() {
 }
 
 function getHealthValue(metricId, dateStr) {
-    // HealthLogs: Date, MetricID, Value
     const log = appData.healthLogs.find(l => String(l[1]) === String(metricId) && String(l[0]).startsWith(dateStr));
     return log ? log[2] : null;
 }
@@ -177,7 +176,6 @@ async function promptLogHealth(id, dateStr) {
     
     if (newVal !== null && newVal.trim() !== "") {
         const numVal = parseFloat(newVal);
-        // Optimistic update
         let logIndex = appData.healthLogs.findIndex(l => String(l[1]) === String(id) && String(l[0]).startsWith(dateStr));
         if (logIndex > -1) {
             appData.healthLogs[logIndex][2] = numVal;
@@ -220,7 +218,6 @@ function toggleEditHealth() {
 }
 
 function renderHealthStats(id) {
-    // Filter logs for this metric
     const logs = appData.healthLogs.filter(l => String(l[1]) === String(id)).map(l => parseFloat(l[2]));
     
     let avg = 0, min = 0, max = 0;
@@ -243,7 +240,6 @@ function renderHealthChart(id) {
     const metric = appData.healthMetrics.find(m => String(m[0]) === String(id));
     const goal = metric[3] ? parseFloat(metric[3]) : null;
 
-    // Filter Data by Time Range
     let cutoff = new Date();
     if (range === 'week') cutoff.setDate(cutoff.getDate() - 7);
     else if (range === 'month') cutoff.setDate(cutoff.getDate() - 30);
@@ -261,52 +257,40 @@ function renderHealthChart(id) {
         return;
     }
 
-    // Determine Min/Max for Y-Axis
     let yMin = Math.min(...dataPoints.map(d => d.val));
     let yMax = Math.max(...dataPoints.map(d => d.val));
     if (goal) {
         yMin = Math.min(yMin, goal);
         yMax = Math.max(yMax, goal);
     }
-    // Add padding
     const padding = (yMax - yMin) * 0.1;
     yMin -= padding; if(yMin < 0) yMin = 0;
     yMax += padding;
 
-    // SVG Dimensions
     const w = container.offsetWidth;
     const h = container.offsetHeight;
-    const xPad = 30; // Left padding for axis text
-    const yPad = 20; // Bottom padding
+    const xPad = 30; 
+    const yPad = 20; 
 
-    // Scale Functions
     const getX = (date) => xPad + ((date - dataPoints[0].date) / (dataPoints[dataPoints.length-1].date - dataPoints[0].date)) * (w - xPad - 10);
     const getY = (val) => h - yPad - ((val - yMin) / (yMax - yMin)) * (h - yPad - 10);
 
-    // Build Line Path
     let dPath = `M ${getX(dataPoints[0].date)} ${getY(dataPoints[0].val)}`;
     dataPoints.slice(1).forEach(p => {
         dPath += ` L ${getX(p.date)} ${getY(p.val)}`;
     });
 
     let svg = `<svg viewBox="0 0 ${w} ${h}">`;
-    
-    // Draw Goal Line
     if (goal) {
         const yGoal = getY(goal);
         svg += `<line x1="${xPad}" y1="${yGoal}" x2="${w}" y2="${yGoal}" class="chart-goal-line" />`;
         svg += `<text x="${w-5}" y="${yGoal-5}" text-anchor="end" class="chart-text">Goal: ${goal}</text>`;
     }
-
-    // Draw Data Line
     svg += `<path d="${dPath}" class="chart-line" />`;
-
-    // Draw Axis Labels (Start/End Date & Min/Max Val)
     svg += `<text x="${xPad}" y="${h-5}" class="chart-text">${dataPoints[0].date.toLocaleDateString(undefined, {month:'short', day:'numeric'})}</text>`;
     svg += `<text x="${w-30}" y="${h-5}" class="chart-text">${dataPoints[dataPoints.length-1].date.toLocaleDateString(undefined, {month:'short', day:'numeric'})}</text>`;
     svg += `<text x="0" y="${getY(yMax)+5}" class="chart-text">${Math.round(yMax)}</text>`;
     svg += `<text x="0" y="${getY(yMin)}" class="chart-text">${Math.round(yMin)}</text>`;
-
     svg += `</svg>`;
     container.innerHTML = svg;
 }
@@ -360,67 +344,40 @@ async function deleteCurrentHealth() {
 }
 
 // --- SHARED HELPERS ---
-
-function openAddHabitModal() {
-    document.getElementById('newHabitName').value = "";
-    document.getElementById('add-habit-modal').style.display = 'block';
-}
-
+function openAddHabitModal() { document.getElementById('newHabitName').value = ""; document.getElementById('add-habit-modal').style.display = 'block'; }
 async function handleAddHabit() {
-    const name = document.getElementById('newHabitName').value;
-    if(!name) return;
-    const id = Date.now().toString();
-    const freq = document.getElementById('newHabitFreq').value;
-    const target = document.getElementById('newHabitTarget').value;
+    const name = document.getElementById('newHabitName').value; if(!name) return;
+    const id = Date.now().toString(); const freq = document.getElementById('newHabitFreq').value; const target = document.getElementById('newHabitTarget').value;
     await sendData({ action: 'addHabit', id, name, frequency: freq, target });
-    appData.habits.push([id, name, freq, target, false]);
-    document.getElementById('add-habit-modal').style.display='none';
-    renderHabitDashboard();
+    appData.habits.push([id, name, freq, target, false]); document.getElementById('add-habit-modal').style.display='none'; renderHabitDashboard();
 }
-
-// --- HABIT DETAIL HELPERS (Kept for completeness) ---
 function openHabitDetail(id) {
-    currentHabitId = id;
-    const habit = appData.habits.find(h => String(h[0]) === String(id));
-    if(!habit) return;
-    calendarOffsetDate = new Date();
-    document.getElementById('modal-habit-title').innerText = habit[1];
-    document.getElementById('habit-detail-modal').style.display = 'block';
-    document.getElementById('edit-name').value = habit[1];
-    document.getElementById('edit-freq').value = habit[2] || 'Daily';
-    document.getElementById('edit-target').value = habit[3] || 1;
-    document.getElementById('habit-edit-form').style.display = 'none';
-    renderHabitStats(id); renderCalendar(id); renderHeatmap(id);
+    currentHabitId = id; const habit = appData.habits.find(h => String(h[0]) === String(id)); if(!habit) return;
+    calendarOffsetDate = new Date(); document.getElementById('modal-habit-title').innerText = habit[1]; document.getElementById('habit-detail-modal').style.display = 'block';
+    document.getElementById('edit-name').value = habit[1]; document.getElementById('edit-freq').value = habit[2] || 'Daily'; document.getElementById('edit-target').value = habit[3] || 1;
+    document.getElementById('habit-edit-form').style.display = 'none'; renderHabitStats(id); renderCalendar(id); renderHeatmap(id);
 }
 function closeHabitModal() { document.getElementById('habit-detail-modal').style.display = 'none'; renderHabitDashboard(); }
 function toggleEditHabit() { const form = document.getElementById('habit-edit-form'); form.style.display = form.style.display === 'none' ? 'block' : 'none'; }
 async function saveHabitConfig() {
-    const name = document.getElementById('edit-name').value;
-    const freq = document.getElementById('edit-freq').value;
-    const target = document.getElementById('edit-target').value;
+    const name = document.getElementById('edit-name').value; const freq = document.getElementById('edit-freq').value; const target = document.getElementById('edit-target').value;
     await sendData({ action: 'updateHabit', id: currentHabitId, name, frequency: freq, target });
-    const habitIdx = appData.habits.findIndex(h => String(h[0]) === String(currentHabitId));
-    if(habitIdx > -1) { appData.habits[habitIdx][1] = name; appData.habits[habitIdx][2] = freq; appData.habits[habitIdx][3] = target; }
+    const habitIdx = appData.habits.findIndex(h => String(h[0]) === String(currentHabitId)); if(habitIdx > -1) { appData.habits[habitIdx][1] = name; appData.habits[habitIdx][2] = freq; appData.habits[habitIdx][3] = target; }
     toggleEditHabit(); openHabitDetail(currentHabitId);
 }
 async function deleteCurrentHabit() {
     if(!confirm("Archive this habit?")) return;
     await sendData({ action: 'deleteHabit', id: currentHabitId });
-    const habitIdx = appData.habits.findIndex(h => String(h[0]) === String(currentHabitId));
-    if(habitIdx > -1) { appData.habits[habitIdx][4] = true; }
+    const habitIdx = appData.habits.findIndex(h => String(h[0]) === String(currentHabitId)); if(habitIdx > -1) { appData.habits[habitIdx][4] = true; }
     closeHabitModal();
 }
 function renderHabitStats(id) {
     const logs = appData.habitLogs.filter(l => String(l[0]) === String(id)).map(l => String(l[1]).substring(0,10)).sort();
     document.getElementById('stat-total').innerText = logs.length;
     let streak = 0; const today = new Date().toISOString().split('T')[0]; let checkDate = new Date();
-    if (logs.includes(today)) streak = 1;
-    let loopLimit = 365; while(loopLimit > 0) { checkDate.setDate(checkDate.getDate() - 1); const dateStr = checkDate.toISOString().split('T')[0]; if (logs.includes(dateStr)) streak++; else if (dateStr !== today) break; loopLimit--; }
+    if (logs.includes(today)) streak = 1; let loopLimit = 365; while(loopLimit > 0) { checkDate.setDate(checkDate.getDate() - 1); const dateStr = checkDate.toISOString().split('T')[0]; if (logs.includes(dateStr)) streak++; else if (dateStr !== today) break; loopLimit--; }
     document.getElementById('stat-streak').innerText = streak;
-    const thirtyDaysAgo = new Date(); thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-    const recentLogs = logs.filter(d => new Date(d) >= thirtyDaysAgo);
-    const rate = Math.round((recentLogs.length / 30) * 100);
-    document.getElementById('stat-rate').innerText = rate + "%";
+    const thirtyDaysAgo = new Date(); thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30); const recentLogs = logs.filter(d => new Date(d) >= thirtyDaysAgo); const rate = Math.round((recentLogs.length / 30) * 100); document.getElementById('stat-rate').innerText = rate + "%";
 }
 function changeCalendarMonth(delta) { calendarOffsetDate.setMonth(calendarOffsetDate.getMonth() + delta); renderCalendar(currentHabitId); }
 function renderCalendar(id) {
@@ -441,12 +398,9 @@ function renderCalendar(id) {
 }
 function renderHeatmap(id) {
     if(!id) id = currentHabitId;
-    const mode = document.getElementById('heatmap-select').value;
-    const grid = document.getElementById('heatmap-grid'); grid.innerHTML = '';
+    const mode = document.getElementById('heatmap-select').value; const grid = document.getElementById('heatmap-grid'); grid.innerHTML = '';
     const today = new Date(); let startDate = new Date();
-    if (mode === '3months') { startDate.setMonth(today.getMonth() - 2); startDate.setDate(1); }
-    else if (mode === 'year') { startDate.setFullYear(today.getFullYear() - 1); }
-    else if (mode === 'all') { startDate = new Date('2025-01-01'); }
+    if (mode === '3months') { startDate.setMonth(today.getMonth() - 2); startDate.setDate(1); } else if (mode === 'year') { startDate.setFullYear(today.getFullYear() - 1); } else if (mode === 'all') { startDate = new Date('2025-01-01'); }
     const diffTime = Math.abs(today - startDate); const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     for(let i=0; i<=diffDays; i++) {
         const d = new Date(startDate); d.setDate(startDate.getDate() + i); if (d > today) break;
@@ -455,8 +409,6 @@ function renderHeatmap(id) {
         grid.innerHTML += `<div class="heat-box ${isChecked?'filled':''}" title="${dateStr}"></div>`;
     }
 }
-
-// --- THEME ---
 function updateThemeFromPicker(color) { applyTheme(color); localStorage.setItem('theme', color); sendData({ action: 'saveSetting', key: 'theme', value: color }); }
 function applyTheme(color) {
     currentTheme = color; document.documentElement.style.setProperty('--accent-color', color);
