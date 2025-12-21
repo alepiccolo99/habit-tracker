@@ -6,7 +6,6 @@
     --text-secondary: #8e8e93;
     --border-color: #38383a;
     --accent-color: #0a84ff; 
-    --accent-color-bg: rgba(10, 132, 255, 0.2); 
     --card-radius: 14px;
 }
 
@@ -18,15 +17,14 @@ body {
     -webkit-tap-highlight-color: transparent;
 }
 
-/* Header (Removed Border) */
+/* Header */
 header {
     display: flex; justify-content: space-between; align-items: center;
     padding: 15px 20px;
     position: sticky; top: 0;
     background: rgba(0,0,0,0.85); backdrop-filter: blur(12px);
     z-index: 100;
-    /* Border removed as requested */
-    border-bottom: none; 
+    /* Removed border-bottom as requested */
 }
 header h1 { font-size: 20px; font-weight: 700; margin: 0; }
 .icon-btn { background: none; border: none; color: var(--text-secondary); cursor: pointer; padding: 5px; }
@@ -41,18 +39,18 @@ header h1 { font-size: 20px; font-weight: 700; margin: 0; }
     align-items: center;
     background-color: var(--bg-card);
     border-radius: var(--card-radius);
-    padding: 8px;
+    padding: 5px 8px; /* Adjusted padding */
     margin-bottom: 8px;
-    height: 50px;
+    height: 44px; /* Reduced height as requested */
 }
 .days-row { background: transparent; height: auto; padding: 0 8px; margin-bottom: 0; }
 
 .habit-label { 
-    font-weight: 600; font-size: 16px; padding-left: 10px;
+    font-weight: 500; font-size: 16px; padding-left: 10px;
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis; 
 }
 
-/* Cells */
+/* Cells (Ticks & Crosses) */
 .day-col-header { text-align: center; color: var(--text-secondary); }
 .day-name { font-size: 10px; font-weight: 700; text-transform: uppercase; }
 .day-num { font-size: 14px; }
@@ -61,48 +59,56 @@ header h1 { font-size: 20px; font-weight: 700; margin: 0; }
 .cell { 
     height: 38px; width: 38px; border-radius: 8px;
     display: flex; align-items: center; justify-content: center; 
-    font-size: 18px; color: #333; cursor: pointer; margin: 0 auto;
-    transition: background 0.15s;
+    font-size: 18px; 
+    font-weight: 400; 
+    cursor: pointer; 
+    margin: 0 auto;
+    color: #3a3a3c; /* Gray X by default */
+    background: transparent; /* Transparent background */
+    transition: transform 0.1s;
 }
-.cell.checked { background-color: var(--accent-color-bg); color: var(--accent-color); font-weight: bold; }
+.cell.checked { 
+    color: var(--accent-color); /* Colored Tick */
+    font-weight: 800; 
+    font-size: 20px;
+}
+.cell:active { transform: scale(0.9); }
+
+/* Custom Select Dropdown (V arrow only) */
+select { 
+    width: 100%; padding: 12px; background: var(--bg-input); border: none; border-radius: 10px; color: #fff; margin-bottom: 10px; box-sizing: border-box; font-size: 16px;
+    appearance: none; -webkit-appearance: none; -moz-appearance: none;
+    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="%238e8e93" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>');
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    background-size: 16px;
+}
+input { width: 100%; padding: 12px; background: var(--bg-input); border: none; border-radius: 10px; color: #fff; margin-bottom: 10px; box-sizing: border-box; font-size: 16px; }
+.input-row { display: flex; gap: 10px; }
 
 /* Modals */
 .modal { position: fixed; inset: 0; background: #000; z-index: 2000; display: none; overflow-y: auto; }
-.modal-header { 
-    display: flex; justify-content: space-between; padding: 20px; align-items: center; 
-    background: #000; position: sticky; top: 0; 
-    /* Border removed as requested */
-    border-bottom: none;
-}
+.modal-header { display: flex; justify-content: space-between; padding: 20px; align-items: center; background: #000; position: sticky; top: 0; }
 .modal-content { padding: 20px; max-width: 600px; margin: 0 auto; }
 
-/* UI Elements */
-.card { background: var(--bg-card); padding: 16px; border-radius: var(--card-radius); margin-bottom: 16px; }
-.transparent-card { background: transparent; padding: 0; }
-input, select { width: 100%; padding: 12px; background: var(--bg-input); border: none; border-radius: 10px; color: #fff; margin-bottom: 10px; box-sizing: border-box; font-size: 16px; }
-.input-row { display: flex; gap: 10px; }
-
+/* Buttons & UI */
 .btn-primary { background: var(--accent-color); color: #000; border: none; border-radius: 30px; padding: 14px; width: 100%; font-weight: 700; font-size: 16px; margin-top: 10px; }
 .btn-delete { background: transparent; color: #ff453a; border: 1px solid #ff453a; border-radius: 30px; padding: 14px; width: 100%; font-weight: 600; margin-top: 10px; }
 .btn-text { background: none; border: none; color: var(--text-primary); font-size: 16px; cursor: pointer; }
+.btn-text-gray { background: none; border: none; color: var(--text-secondary); font-size: 24px; cursor: pointer; padding: 0 10px; }
 
-/* Settings Styles (New) */
-.setting-row { display: flex; justify-content: space-between; align-items: center; }
-.setting-text h3 { margin: 0; font-size: 16px; font-weight: 600; }
-.setting-text p { margin: 4px 0 0 0; font-size: 13px; color: var(--text-secondary); }
-.color-picker-container { 
-    position: relative; width: 44px; height: 44px; 
-    background: var(--bg-input); border-radius: 50%; 
+/* Color Picker Button Wrapper */
+.color-btn-wrapper {
+    position: relative;
+    width: 40px; height: 40px;
+    background: var(--bg-input);
+    border-radius: 50%;
     display: flex; align-items: center; justify-content: center;
+    overflow: hidden;
 }
-#themeColorPicker { 
-    position: absolute; width: 100%; height: 100%; opacity: 0; cursor: pointer; 
-    z-index: 2; padding: 0; margin: 0;
-}
-.color-circle { 
-    width: 24px; height: 24px; border-radius: 50%; 
-    background-color: var(--accent-color); 
-    border: 2px solid #fff; pointer-events: none;
+.color-btn-wrapper input[type="color"] {
+    position: absolute; top: -50%; left: -50%; width: 200%; height: 200%;
+    opacity: 0; cursor: pointer;
 }
 
 /* Stats & Calendar */
@@ -118,11 +124,7 @@ input, select { width: 100%; padding: 12px; background: var(--bg-input); border:
 .cal-day.today { border: 1px solid var(--accent-color); }
 
 /* Loading */
-#loading-overlay { 
-    position: fixed; inset: 0; background: #000; 
-    display: flex; flex-direction: column; 
-    align-items: center; justify-content: center; z-index: 9999; 
-}
-.spinner { width: 30px; height: 30px; border: 3px solid #333; border-top: 3px solid var(--accent-color); border-radius: 50%; animation: spin 0.8s linear infinite; }
-.loading-text { margin-top: 15px; color: var(--text-secondary); font-size: 14px; font-weight: 500; }
+#loading-overlay { position: fixed; inset: 0; background: #000; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 9999; }
+.spinner { width: 30px; height: 30px; border: 3px solid #333; border-top: 3px solid var(--accent-color); border-radius: 50%; animation: spin 0.8s linear infinite; margin-bottom: 15px; }
+.loading-text { color: var(--text-secondary); font-size: 14px; font-weight: 500; }
 @keyframes spin { 100% { transform: rotate(360deg); } }
