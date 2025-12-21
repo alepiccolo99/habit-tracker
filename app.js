@@ -1,10 +1,9 @@
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx0fnSmgxAQgQUvt2yPHfP9TfBcJQlNq3WVaFOxArWDOPqf0jSsnQh0rpmlbwHG_JrvOA/exec"; 
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyRbSlMIzyd-3hAzirBIkQub8CnYriwoAIhBbNvOwnhNeKWrM80IEy0J7NrZLWqET9K_g/exec"; 
 const TOKEN = "aleLifeTracker_1999";
 
-let appData = { habits: [], habitLogs: [], healthMetrics: [], healthLogs: [], settings: [] };
+let appData = { habits: [], habitLogs: [], settings: [] };
 let currentTheme = localStorage.getItem('theme') || '#0a84ff';
 let currentHabitId = null; 
-let currentHealthId = null;
 let calendarOffsetDate = new Date(); 
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -12,9 +11,9 @@ document.addEventListener('DOMContentLoaded', () => {
     fetchData();
 });
 
-// --- DATE HELPER (THE FIX) ---
-// Returns YYYY-MM-DD in LOCAL time, preventing the -1 day UTC bug
+// --- DATE HELPER (Strict Local Date) ---
 function getLocalDateString(dateObj) {
+    if (!dateObj) return "";
     const year = dateObj.getFullYear();
     const month = String(dateObj.getMonth() + 1).padStart(2, '0');
     const day = String(dateObj.getDate()).padStart(2, '0');
@@ -26,65 +25,29 @@ async function fetchData() {
     try {
         const resp = await fetch(`${SCRIPT_URL}?token=${TOKEN}&action=getAll`);
         const data = await resp.json();
-        appData = data;
         
-        const savedTheme = data.settings.find(s => s[0] === 'theme');
-        if (savedTheme && savedTheme[1] && savedTheme[1] !== currentTheme) {
-            applyTheme(savedTheme[1]);
-            const picker = document.getElementById('themeColorPicker');
-            if(picker) picker.value = savedTheme[1];
+        // Sanitize Dates immediately
+        if(data.habitLogs) {
+            data.habitLogs.forEach(row => { row[1] = String(row[1]).split('T')[0]; });
         }
         
-        router('habits');
+        appData = data;
+        
+        // Apply Theme
+        const savedTheme = data.settings.find(s => s[0] === 'theme');
+        if (savedTheme && savedTheme[1]) applyTheme(savedTheme[1]);
+        
+        renderHabitDashboard();
     } catch (e) {
-        console.error("Fetch Error:", e);
+        console.error("Error:", e);
+        alert("Could not load data.");
     } finally {
         if(loader) loader.style.display = 'none';
     }
 }
 
-// --- ROUTING ---
-function router(viewId) {
-    document.getElementById('sidebar').classList.remove('open');
-    document.getElementById('overlay').style.display = 'none';
-    
-    document.querySelectorAll('.view').forEach(el => el.classList.remove('active-view'));
-    const target = document.getElementById(viewId + '-view');
-    if(target) target.classList.add('active-view');
-    
-    document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
-    const activeBtn = document.getElementById('nav-' + viewId);
-    if(activeBtn) activeBtn.classList.add('active');
-    
-    document.getElementById('page-title').innerText = viewId.charAt(0).toUpperCase() + viewId.slice(1);
-    const actionArea = document.getElementById('header-action');
-    actionArea.innerHTML = '';
-    
-    if (viewId === 'habits') {
-        createAddButton(actionArea, openAddHabitModal);
-        renderHabitDashboard();
-    } else if (viewId === 'health') {
-        createAddButton(actionArea, openAddHealthModal);
-        renderHealthDashboard();
-    }
-}
+// --- RENDER ---
 
-function createAddButton(container, onClickFn) {
-    const addBtn = document.createElement('button');
-    addBtn.innerHTML = "Add"; 
-    addBtn.className = "btn-secondary"; 
-    addBtn.onclick = onClickFn;
-    container.appendChild(addBtn);
-}
-
-function toggleSidebar() {
-    const sb = document.getElementById('sidebar');
-    const open = sb.classList.contains('open');
-    sb.classList.toggle('open');
-    document.getElementById('overlay').style.display = open ? 'none' : 'block';
-}
-
-// --- HABITS DASHBOARD ---
 function getRecentDays(n) {
     const dates = [];
     for(let i=0; i<n; i++) {
@@ -99,355 +62,222 @@ function renderHabitDashboard() {
     const list = document.getElementById('habits-list');
     const header = document.getElementById('week-header');
     
-    const validHabits = (appData.habits || []).filter(h => h[0] && h[1] && h[4] !== true);
-    if (validHabits.length === 0) {
-        list.innerHTML = `<div style="text-align:center; color:#555; margin-top:30px;">Tap "Add" to start tracking.</div>`;
+    // Valid Habits
+    const habits = appData.habits || [];
+
+    if (habits.length === 0) {
+        list.innerHTML = `<div style="text-align:center; color:#555; margin-top:40px;">No habits yet.<br>Click + to add one.</div>`;
         header.innerHTML = ''; return;
     }
 
     const days = getRecentDays(5);
     const todayStr = getLocalDateString(new Date()); 
     
+    // Header
     header.innerHTML = '<div></div>' + days.map(d => {
         const dStr = getLocalDateString(d);
         const isToday = dStr === todayStr;
-        return `<div class="day-wrapper-header ${isToday ? 'current' : ''}"><div class="day-name">${d.toLocaleDateString('en-US', {weekday:'short'})}</div><div class="day-num">${d.getDate()}</div></div>`;
+        return `<div class="day-col-header ${isToday ? 'today' : ''}">
+                    <div class="day-name">${d.toLocaleDateString('en-US', {weekday:'short'})}</div>
+                    <div class="day-num">${d.getDate()}</div>
+                </div>`;
     }).join('');
 
-    list.innerHTML = validHabits.map(h => {
+    // List
+    list.innerHTML = habits.map(h => {
         const [id, name] = h;
         return `<div class="habit-row">
             <div class="habit-label" onclick="openHabitDetail('${id}')">${name}</div>
             ${days.map(d => {
-                const dateStr = getLocalDateString(d); // FIXED: Use local string
+                const dateStr = getLocalDateString(d);
                 const checked = appData.habitLogs.some(l => String(l[0]) === String(id) && String(l[1]) === dateStr);
-                const symbol = checked ? '✔' : '✕';
-                return `<div class="cell ${checked ? 'checked' : ''}" onclick="toggleHabit('${id}', '${dateStr}', this)">${symbol}</div>`;
+                return `<div class="cell ${checked ? 'checked' : ''}" onclick="toggleHabit('${id}', '${dateStr}', this)">${checked ? '✔' : ''}</div>`;
             }).join('')}
         </div>`;
     }).join('');
 }
+
+// --- ACTIONS ---
 
 async function toggleHabit(id, dateStr, el) {
     const isChecked = el.classList.contains('checked');
-    el.classList.toggle('checked');
-    el.innerText = isChecked ? '✕' : '✔';
     
-    // Optimistic Update
-    // IMPORTANT: Filter MUST compare strings strictly
-    if(isChecked) {
+    // Optimistic UI
+    if (isChecked) {
+        el.classList.remove('checked');
+        el.innerText = '';
         appData.habitLogs = appData.habitLogs.filter(l => !(String(l[0]) === String(id) && String(l[1]) === dateStr));
     } else {
+        el.classList.add('checked');
+        el.innerText = '✔';
         appData.habitLogs.push([id, dateStr, 1]);
     }
-
+    
     await sendData({ action: 'toggleHabit', habitId: id, date: dateStr });
     
-    if(document.getElementById('habit-detail-modal').style.display === 'block') { renderHabitStats(id); renderCalendar(id); renderHeatmap(id); }
-}
-
-// --- HEALTH DASHBOARD ---
-
-function renderHealthDashboard() {
-    const list = document.getElementById('health-list');
-    const header = document.getElementById('health-week-header');
-    
-    const validMetrics = (appData.healthMetrics || []).filter(m => m[0] && m[1] && m[4] !== true);
-
-    if (validMetrics.length === 0) {
-        list.innerHTML = `<div style="text-align:center; color:#555; margin-top:30px;">Tap "Add" to start tracking health.</div>`;
-        header.innerHTML = ''; return;
-    }
-
-    const days = getRecentDays(5);
-    const todayStr = getLocalDateString(new Date());
-
-    header.innerHTML = '<div></div>' + days.map(d => {
-        const isToday = getLocalDateString(d) === todayStr;
-        return `<div class="day-wrapper-header ${isToday ? 'current' : ''}"><div class="day-name">${d.toLocaleDateString('en-US', {weekday:'short'})}</div><div class="day-num">${d.getDate()}</div></div>`;
-    }).join('');
-
-    list.innerHTML = validMetrics.map(m => {
-        const [id, name, unit] = m;
-        return `<div class="habit-row">
-            <div class="habit-label" onclick="openHealthDetail('${id}')">${name} <span style="font-size:12px; color:#666; margin-left:5px"> ${unit || ''}</span></div>
-            ${days.map(d => {
-                const dateStr = getLocalDateString(d); // FIXED
-                const val = getHealthValue(id, dateStr);
-                const displayVal = val !== null ? val : '·';
-                const isEmpty = val === null;
-                return `<div class="cell cell-value ${isEmpty?'empty':''}" onclick="promptLogHealth('${id}', '${dateStr}')">${displayVal}</div>`;
-            }).join('')}
-        </div>`;
-    }).join('');
-}
-
-function getHealthValue(metricId, dateStr) {
-    const log = appData.healthLogs.find(l => String(l[1]) === String(metricId) && String(l[0]) === dateStr);
-    return log ? log[2] : null;
-}
-
-async function promptLogHealth(id, dateStr) {
-    const currentVal = getHealthValue(id, dateStr) || "";
-    const newVal = prompt(`Enter value for ${dateStr}:`, currentVal);
-    
-    if (newVal !== null && newVal.trim() !== "") {
-        const numVal = parseFloat(newVal);
-        
-        let logIndex = appData.healthLogs.findIndex(l => String(l[1]) === String(id) && String(l[0]) === dateStr);
-        if (logIndex > -1) {
-            appData.healthLogs[logIndex][2] = numVal;
-        } else {
-            appData.healthLogs.push([dateStr, id, numVal, ""]);
-        }
-        
-        renderHealthDashboard();
-        
-        await sendData({ action: 'logHealth', metricId: id, date: dateStr, value: numVal });
+    // Refresh modals if open
+    if(document.getElementById('habit-detail-modal').style.display === 'block') {
+        renderHabitStats(id); renderCalendar(id);
     }
 }
 
-// --- HEALTH DETAIL & CHART ---
-// Updated to use Local Date logic for filtering
-
-function openHealthDetail(id) {
-    currentHealthId = id;
-    const metric = appData.healthMetrics.find(m => String(m[0]) === String(id));
-    if(!metric) return;
-    
-    document.getElementById('modal-health-title').innerText = metric[1];
-    document.getElementById('health-detail-modal').style.display = 'block';
-    
-    document.getElementById('edit-health-name').value = metric[1];
-    document.getElementById('edit-health-unit').value = metric[2] || '';
-    document.getElementById('edit-health-goal').value = metric[3] || '';
-    document.getElementById('health-edit-form').style.display = 'none';
-
-    renderHealthStats(id);
-    renderHealthChart(id);
-}
-
-function closeHealthModal() {
-    document.getElementById('health-detail-modal').style.display = 'none';
-    renderHealthDashboard();
-}
-
-function toggleEditHealth() {
-    const form = document.getElementById('health-edit-form');
-    form.style.display = form.style.display === 'none' ? 'block' : 'none';
-}
-
-function renderHealthStats(id) {
-    const logs = appData.healthLogs.filter(l => String(l[1]) === String(id)).map(l => parseFloat(l[2]));
-    
-    let avg = 0, min = 0, max = 0;
-    if(logs.length > 0) {
-        min = Math.min(...logs);
-        max = Math.max(...logs);
-        const sum = logs.reduce((a, b) => a + b, 0);
-        avg = (sum / logs.length).toFixed(1);
-    }
-    
-    document.getElementById('health-avg').innerText = avg;
-    document.getElementById('health-min').innerText = min;
-    document.getElementById('health-max').innerText = max;
-}
-
-function renderHealthChart(id) {
-    if(!id) id = currentHealthId;
-    const container = document.getElementById('health-chart-container');
-    const range = document.getElementById('chart-range-select').value;
-    const metric = appData.healthMetrics.find(m => String(m[0]) === String(id));
-    const goal = metric[3] ? parseFloat(metric[3]) : null;
-
-    let cutoff = new Date();
-    if (range === 'week') cutoff.setDate(cutoff.getDate() - 7);
-    else if (range === 'month') cutoff.setDate(cutoff.getDate() - 30);
-    else if (range === 'year') cutoff.setFullYear(cutoff.getFullYear() - 1);
-    else cutoff = new Date('2000-01-01');
-    
-    // Reset hours to avoid time comparison issues
-    cutoff.setHours(0,0,0,0);
-
-    const dataPoints = appData.healthLogs
-        .filter(l => String(l[1]) === String(id))
-        .map(l => ({ date: new Date(l[0]), val: parseFloat(l[2]) })) // l[0] is YYYY-MM-DD string
-        .filter(d => d.date >= cutoff && !isNaN(d.val))
-        .sort((a,b) => a.date - b.date);
-
-    if (dataPoints.length < 2) {
-        container.innerHTML = '<div style="display:flex;height:100%;align-items:center;justify-content:center;color:#666">Not enough data to chart</div>';
-        return;
-    }
-
-    let yMin = Math.min(...dataPoints.map(d => d.val));
-    let yMax = Math.max(...dataPoints.map(d => d.val));
-    if (goal) {
-        yMin = Math.min(yMin, goal);
-        yMax = Math.max(yMax, goal);
-    }
-    const padding = (yMax - yMin) * 0.1;
-    yMin -= padding; if(yMin < 0) yMin = 0;
-    yMax += padding;
-    if(yMax === yMin) yMax += 1;
-
-    const w = container.offsetWidth;
-    const h = container.offsetHeight;
-    const xPad = 30; 
-    const yPad = 20; 
-
-    const getX = (date) => xPad + ((date - dataPoints[0].date) / (dataPoints[dataPoints.length-1].date - dataPoints[0].date)) * (w - xPad - 10);
-    const getY = (val) => h - yPad - ((val - yMin) / (yMax - yMin)) * (h - yPad * 2);
-
-    let dPath = `M ${getX(dataPoints[0].date)} ${getY(dataPoints[0].val)}`;
-    dataPoints.slice(1).forEach(p => {
-        dPath += ` L ${getX(p.date)} ${getY(p.val)}`;
-    });
-
-    let svg = `<svg viewBox="0 0 ${w} ${h}">`;
-    if (goal) {
-        const yGoal = getY(goal);
-        svg += `<line x1="${xPad}" y1="${yGoal}" x2="${w}" y2="${yGoal}" class="chart-goal-line" />`;
-        svg += `<text x="${w-5}" y="${yGoal-5}" text-anchor="end" class="chart-text">Goal: ${goal}</text>`;
-    }
-    svg += `<path d="${dPath}" class="chart-line" />`;
-    svg += `<text x="${xPad}" y="${h-5}" class="chart-text">${dataPoints[0].date.toLocaleDateString(undefined, {month:'short', day:'numeric'})}</text>`;
-    svg += `<text x="${w-30}" y="${h-5}" class="chart-text">${dataPoints[dataPoints.length-1].date.toLocaleDateString(undefined, {month:'short', day:'numeric'})}</text>`;
-    svg += `<text x="0" y="${getY(yMax)+5}" class="chart-text">${Math.round(yMax)}</text>`;
-    svg += `<text x="0" y="${getY(yMin)}" class="chart-text">${Math.round(yMin)}</text>`;
-    svg += `</svg>`;
-    container.innerHTML = svg;
-}
-
-// --- SHARED HELPERS & MODALS (No changes needed except strict strings) ---
-function openAddHealthModal() {
-    document.getElementById('newHealthName').value = "";
-    document.getElementById('newHealthUnit').value = "";
-    document.getElementById('newHealthGoal').value = "";
-    document.getElementById('add-health-modal').style.display = 'block';
-}
-
-async function handleAddHealth() {
-    const name = document.getElementById('newHealthName').value;
+async function handleAddHabit() {
+    const name = document.getElementById('newHabitName').value;
     if(!name) return;
     const id = Date.now().toString();
-    const unit = document.getElementById('newHealthUnit').value;
-    const goal = document.getElementById('newHealthGoal').value;
-    await sendData({ action: 'addHealthMetric', id, name, unit, goal });
-    appData.healthMetrics.push([id, name, unit, goal, false]);
-    document.getElementById('add-health-modal').style.display='none';
-    renderHealthDashboard();
-}
-
-async function saveHealthConfig() {
-    const name = document.getElementById('edit-health-name').value;
-    const unit = document.getElementById('edit-health-unit').value;
-    const goal = document.getElementById('edit-health-goal').value;
-    await sendData({ action: 'updateHealthMetric', id: currentHealthId, name, unit, goal });
-    const idx = appData.healthMetrics.findIndex(m => String(m[0]) === String(currentHealthId));
-    if(idx > -1) {
-        appData.healthMetrics[idx][1] = name;
-        appData.healthMetrics[idx][2] = unit;
-        appData.healthMetrics[idx][3] = goal;
-    }
-    toggleEditHealth();
-    openHealthDetail(currentHealthId);
-}
-
-async function deleteCurrentHealth() {
-    if(!confirm("Archive this metric?")) return;
-    await sendData({ action: 'deleteHealthMetric', id: currentHealthId });
-    const idx = appData.healthMetrics.findIndex(m => String(m[0]) === String(currentHealthId));
-    if(idx > -1) appData.healthMetrics[idx][4] = true;
-    closeHealthModal();
-}
-
-function openAddHabitModal() { document.getElementById('newHabitName').value = ""; document.getElementById('add-habit-modal').style.display = 'block'; }
-async function handleAddHabit() {
-    const name = document.getElementById('newHabitName').value; if(!name) return;
-    const id = Date.now().toString(); const freq = document.getElementById('newHabitFreq').value; const target = document.getElementById('newHabitTarget').value;
+    const freq = document.getElementById('newHabitFreq').value;
+    const target = document.getElementById('newHabitTarget').value;
+    
+    // Optimistic
+    appData.habits.push([id, name, freq, target]);
+    document.getElementById('add-habit-modal').style.display='none';
+    renderHabitDashboard();
+    
     await sendData({ action: 'addHabit', id, name, frequency: freq, target });
-    appData.habits.push([id, name, freq, target, false]); document.getElementById('add-habit-modal').style.display='none'; renderHabitDashboard();
 }
+
+async function saveHabitConfig() {
+    const name = document.getElementById('edit-name').value;
+    const freq = document.getElementById('edit-freq').value;
+    const target = document.getElementById('edit-target').value;
+    
+    const idx = appData.habits.findIndex(h => String(h[0]) === String(currentHabitId));
+    if(idx > -1) {
+        appData.habits[idx][1] = name;
+        appData.habits[idx][2] = freq;
+        appData.habits[idx][3] = target;
+    }
+    
+    toggleEditHabit();
+    document.getElementById('modal-habit-title').innerText = name;
+    renderHabitDashboard();
+    
+    await sendData({ action: 'updateHabit', id: currentHabitId, name, frequency: freq, target });
+}
+
+// --- DELETE (Cascade) ---
+async function deleteCurrentHabit() {
+    if(!confirm("Delete this habit and ALL its history? This cannot be undone.")) return;
+    
+    // 1. Remove from local habits
+    appData.habits = appData.habits.filter(h => String(h[0]) !== String(currentHabitId));
+    
+    // 2. Remove from local logs
+    appData.habitLogs = appData.habitLogs.filter(l => String(l[0]) !== String(currentHabitId));
+    
+    closeHabitModal();
+    renderHabitDashboard();
+    
+    await sendData({ action: 'deleteHabit', id: currentHabitId });
+}
+
+// --- DETAILS & STATS ---
 
 function openHabitDetail(id) {
-    currentHabitId = id; const habit = appData.habits.find(h => String(h[0]) === String(id)); if(!habit) return;
-    calendarOffsetDate = new Date(); document.getElementById('modal-habit-title').innerText = habit[1]; document.getElementById('habit-detail-modal').style.display = 'block';
-    document.getElementById('edit-name').value = habit[1]; document.getElementById('edit-freq').value = habit[2] || 'Daily'; document.getElementById('edit-target').value = habit[3] || 1;
-    document.getElementById('habit-edit-form').style.display = 'none'; renderHabitStats(id); renderCalendar(id); renderHeatmap(id);
+    currentHabitId = id;
+    const habit = appData.habits.find(h => String(h[0]) === String(id));
+    if(!habit) return;
+    
+    calendarOffsetDate = new Date();
+    document.getElementById('modal-habit-title').innerText = habit[1];
+    document.getElementById('edit-name').value = habit[1];
+    document.getElementById('edit-freq').value = habit[2] || 'Daily';
+    document.getElementById('edit-target').value = habit[3] || 1;
+    
+    document.getElementById('habit-edit-form').style.display = 'none';
+    document.getElementById('habit-detail-modal').style.display = 'block';
+    
+    renderHabitStats(id);
+    renderCalendar(id);
 }
+
 function closeHabitModal() { document.getElementById('habit-detail-modal').style.display = 'none'; renderHabitDashboard(); }
-function toggleEditHabit() { const form = document.getElementById('habit-edit-form'); form.style.display = form.style.display === 'none' ? 'block' : 'none'; }
-async function saveHabitConfig() {
-    const name = document.getElementById('edit-name').value; const freq = document.getElementById('edit-freq').value; const target = document.getElementById('edit-target').value;
-    await sendData({ action: 'updateHabit', id: currentHabitId, name, frequency: freq, target });
-    const habitIdx = appData.habits.findIndex(h => String(h[0]) === String(currentHabitId)); if(habitIdx > -1) { appData.habits[habitIdx][1] = name; appData.habits[habitIdx][2] = freq; appData.habits[habitIdx][3] = target; }
-    toggleEditHabit(); openHabitDetail(currentHabitId);
+function toggleEditHabit() { 
+    const form = document.getElementById('habit-edit-form'); 
+    form.style.display = form.style.display === 'none' ? 'block' : 'none'; 
 }
-async function deleteCurrentHabit() {
-    if(!confirm("Archive this habit?")) return;
-    await sendData({ action: 'deleteHabit', id: currentHabitId });
-    const habitIdx = appData.habits.findIndex(h => String(h[0]) === String(currentHabitId)); if(habitIdx > -1) { appData.habits[habitIdx][4] = true; }
-    closeHabitModal();
-}
-// Updated with getLocalDateString
+
 function renderHabitStats(id) {
-    const logs = appData.habitLogs.filter(l => String(l[0]) === String(id)).map(l => String(l[1]).substring(0,10)).sort();
+    const logs = appData.habitLogs.filter(l => String(l[0]) === String(id)).map(l => String(l[1])).sort();
+    
     document.getElementById('stat-total').innerText = logs.length;
-    let streak = 0; const today = getLocalDateString(new Date()); let checkDate = new Date();
-    if (logs.includes(today)) streak = 1; let loopLimit = 365; 
-    while(loopLimit > 0) { 
-        checkDate.setDate(checkDate.getDate() - 1); 
-        const dateStr = getLocalDateString(checkDate); 
-        if (logs.includes(dateStr)) streak++; else if (dateStr !== today) break; loopLimit--; 
+    
+    // Streak Logic (Strict Local Date)
+    let streak = 0; 
+    const today = getLocalDateString(new Date()); 
+    let checkDate = new Date();
+    
+    if (logs.includes(today)) streak = 1; 
+    let limit = 365;
+    while(limit > 0) {
+        checkDate.setDate(checkDate.getDate() - 1);
+        const dStr = getLocalDateString(checkDate);
+        if (logs.includes(dStr)) streak++; else if (dStr !== today) break;
+        limit--;
     }
     document.getElementById('stat-streak').innerText = streak;
-    const thirtyDaysAgo = new Date(); thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30); 
-    // Rough filter for rate
-    const recentLogs = logs.filter(d => d >= getLocalDateString(thirtyDaysAgo)); 
-    const rate = Math.round((recentLogs.length / 30) * 100); document.getElementById('stat-rate').innerText = rate + "%";
+    
+    // Monthly Rate
+    const thirtyDaysAgo = new Date(); thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    const recent = logs.filter(d => d >= getLocalDateString(thirtyDaysAgo));
+    document.getElementById('stat-rate').innerText = Math.round((recent.length / 30) * 100) + "%";
 }
 
 function changeCalendarMonth(delta) { calendarOffsetDate.setMonth(calendarOffsetDate.getMonth() + delta); renderCalendar(currentHabitId); }
+
 function renderCalendar(id) {
-    const grid = document.getElementById('calendar-grid'); grid.innerHTML = ''; const displayDate = new Date(calendarOffsetDate);
-    const days = ['M','T','W','T','F','S','S']; days.forEach(d => grid.innerHTML += `<div style="font-size:10px; color:#888">${d}</div>`);
+    const grid = document.getElementById('calendar-grid'); 
+    grid.innerHTML = ''; 
+    const displayDate = new Date(calendarOffsetDate);
+    
+    const days = ['M','T','W','T','F','S','S']; 
+    days.forEach(d => grid.innerHTML += `<div style="font-size:10px; color:#666">${d}</div>`);
+    
     document.getElementById('cal-month-name').innerText = displayDate.toLocaleDateString('en-US', {month: 'long', year: 'numeric'});
-    const year = displayDate.getFullYear(); const month = displayDate.getMonth();
-    let firstDayIndex = new Date(year, month, 1).getDay(); firstDayIndex = (firstDayIndex === 0) ? 6 : firstDayIndex - 1;
+    
+    const year = displayDate.getFullYear(); 
+    const month = displayDate.getMonth();
+    
+    let firstDayIndex = new Date(year, month, 1).getDay(); 
+    firstDayIndex = (firstDayIndex === 0) ? 6 : firstDayIndex - 1;
     const daysInMonth = new Date(year, month + 1, 0).getDate();
+    
     for(let i=0; i<firstDayIndex; i++) grid.innerHTML += '<div></div>';
-    const now = new Date(); const isCurrentMonth = (now.getFullYear() === year && now.getMonth() === month);
+    
+    const now = new Date(); 
+    const isCurrentMonth = (now.getFullYear() === year && now.getMonth() === month);
+    
     for(let i=1; i<=daysInMonth; i++) {
-        // Build manual date string YYYY-MM-DD
-        const currentM = String(month+1).padStart(2,'0');
-        const currentD = String(i).padStart(2,'0');
-        const dStr = `${year}-${currentM}-${currentD}`;
+        const dStr = `${year}-${String(month+1).padStart(2,'0')}-${String(i).padStart(2,'0')}`;
         const isChecked = appData.habitLogs.some(l => String(l[0]) === String(id) && String(l[1]) === dStr);
         const isToday = isCurrentMonth && (i === now.getDate());
+        
         grid.innerHTML += `<div class="cal-day ${isChecked?'active':''} ${isToday?'today':''}">${i}</div>`;
     }
 }
-function renderHeatmap(id) {
-    if(!id) id = currentHabitId;
-    const mode = document.getElementById('heatmap-select').value; const grid = document.getElementById('heatmap-grid'); grid.innerHTML = '';
-    const today = new Date(); let startDate = new Date();
-    if (mode === '3months') { startDate.setMonth(today.getMonth() - 2); startDate.setDate(1); } else if (mode === 'year') { startDate.setFullYear(today.getFullYear() - 1); } else if (mode === 'all') { startDate = new Date('2025-01-01'); }
-    const diffTime = Math.abs(today - startDate); const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    for(let i=0; i<=diffDays; i++) {
-        const d = new Date(startDate); d.setDate(startDate.getDate() + i); if (d > today) break;
-        const dateStr = getLocalDateString(d); // FIXED
-        const isChecked = appData.habitLogs.some(l => String(l[0]) === String(id) && String(l[1]) === dateStr);
-        grid.innerHTML += `<div class="heat-box ${isChecked?'filled':''}" title="${dateStr}"></div>`;
-    }
+
+// --- SETTINGS ---
+function openSettings() { document.getElementById('settings-modal').style.display = 'block'; document.getElementById('themeColorPicker').value = currentTheme; }
+function openAddHabitModal() { document.getElementById('newHabitName').value = ""; document.getElementById('add-habit-modal').style.display = 'block'; }
+
+function updateThemeFromPicker(color) { 
+    applyTheme(color); 
+    localStorage.setItem('theme', color); 
+    sendData({ action: 'saveSetting', key: 'theme', value: color }); 
 }
-function updateThemeFromPicker(color) { applyTheme(color); localStorage.setItem('theme', color); sendData({ action: 'saveSetting', key: 'theme', value: color }); }
+
 function applyTheme(color) {
-    currentTheme = color; document.documentElement.style.setProperty('--accent-color', color);
+    currentTheme = color; 
+    document.documentElement.style.setProperty('--accent-color', color);
     if(color.startsWith('#') && color.length === 7) {
-        const r = parseInt(color.substr(1,2), 16); const g = parseInt(color.substr(3,2), 16); const b = parseInt(color.substr(5,2), 16);
+        const r = parseInt(color.substr(1,2), 16); 
+        const g = parseInt(color.substr(3,2), 16); 
+        const b = parseInt(color.substr(5,2), 16);
         document.documentElement.style.setProperty('--accent-color-bg', `rgba(${r}, ${g}, ${b}, 0.2)`);
     }
-    const previewBox = document.getElementById('color-preview-box'); if(previewBox) previewBox.style.backgroundColor = color;
 }
-async function sendData(payload) { payload.token = TOKEN; return await fetch(SCRIPT_URL, { method: "POST", mode: "no-cors", body: JSON.stringify(payload) }); }
+
+async function sendData(payload) { 
+    payload.token = TOKEN; 
+    return await fetch(SCRIPT_URL, { method: "POST", mode: "no-cors", body: JSON.stringify(payload) }); 
+}
