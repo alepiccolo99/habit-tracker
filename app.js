@@ -1,4 +1,4 @@
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxmYvmSP9BzQYGT9M0VcKluQ2xF72tojQUXlbsalQseq5hVS898TciwMArcFSrrpImFBQ/exec"; 
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbybQvYzPIvCXhzIUZY3mXbeFx9VNjTekj4yjXIjsn69lZJ-SrqAfSJ17nllZHVCd1nvnQ/exec"; 
 const TOKEN = "aleLifeTracker_1999";
 
 // State
@@ -9,7 +9,7 @@ let calendarOffsetDate = new Date();
 
 // Initialization
 document.addEventListener('DOMContentLoaded', () => {
-    applyTheme(currentTheme); // Instant load from LocalStorage
+    applyTheme(currentTheme); 
     fetchData();
 });
 
@@ -20,14 +20,12 @@ async function fetchData() {
         const data = await resp.json();
         appData = data;
         
-        // Sync Theme from Server
+        // Sync Theme
         const savedTheme = data.settings.find(s => s[0] === 'theme');
         if (savedTheme && savedTheme[1]) {
-            // Update local storage and UI if server differs
             if (savedTheme[1] !== currentTheme) {
                 applyTheme(savedTheme[1]);
             }
-            // Update picker UI
             const picker = document.getElementById('themeColorPicker');
             if(picker) picker.value = savedTheme[1];
         }
@@ -41,15 +39,9 @@ async function fetchData() {
 }
 
 // --- THEME LOGIC ---
-
 function updateThemeFromPicker(color) {
-    // 1. Apply visual change immediately (Optimistic UI)
     applyTheme(color);
-    
-    // 2. Save to LocalStorage
     localStorage.setItem('theme', color);
-    
-    // 3. Save to Google Sheets (Async)
     sendData({ action: 'saveSetting', key: 'theme', value: color });
 }
 
@@ -57,16 +49,16 @@ function applyTheme(color) {
     currentTheme = color;
     document.documentElement.style.setProperty('--accent-color', color);
     
-    // Calculate RGBA for transparent background (used in checkmarks)
+    // Calculate RGBA for transparent background
     if(color.startsWith('#') && color.length === 7) {
         const r = parseInt(color.substr(1,2), 16);
         const g = parseInt(color.substr(3,2), 16);
         const b = parseInt(color.substr(5,2), 16);
-        const rgbaVal = `rgba(${r}, ${g}, ${b}, 0.2)`;
+        // Changed opacity to 0.15 for better contrast in cells
+        const rgbaVal = `rgba(${r}, ${g}, ${b}, 0.15)`;
         document.documentElement.style.setProperty('--accent-color-bg', rgbaVal);
     }
     
-    // Update preview box if visible
     const previewBox = document.getElementById('color-preview-box');
     if(previewBox) previewBox.style.backgroundColor = color;
 }
@@ -120,7 +112,7 @@ function renderHabitDashboard() {
     const list = document.getElementById('habits-list');
     const header = document.getElementById('week-header');
     
-    // Filter: Show only if not archived
+    // Filter archived
     const validHabits = (appData.habits || []).filter(h => h[0] && h[1] && h[4] !== true);
 
     if (validHabits.length === 0) {
@@ -132,6 +124,7 @@ function renderHabitDashboard() {
     const days = getRecentDays(5);
     const todayStr = new Date().toDateString(); 
     
+    // Header Grid matching the content grid (Spacer for Name + 5 Days)
     header.innerHTML = '<div></div>' + days.map(d => {
         const isToday = d.toDateString() === todayStr;
         return `
@@ -150,9 +143,12 @@ function renderHabitDashboard() {
             ${days.map(d => {
                 const dateStr = d.toISOString().split('T')[0];
                 const checked = checkStatus(id, dateStr);
+                // Visual Logic: If checked -> Show ✔, If NOT checked -> Show ✕
+                const symbol = checked ? '✔' : '✕';
+                
                 return `<div class="cell ${checked ? 'checked' : ''}" 
                         onclick="toggleHabit('${id}', '${dateStr}', this)">
-                        ${checked ? '✔' : ''}
+                        ${symbol}
                         </div>`;
             }).join('')}
         </div>`;
@@ -166,7 +162,10 @@ function checkStatus(id, dateStr) {
 async function toggleHabit(id, date, el) {
     const isChecked = el.classList.contains('checked');
     el.classList.toggle('checked');
-    el.innerText = isChecked ? '' : '✔';
+    
+    // Toggle visual symbol immediately
+    // If it was checked (now unchecked), show X. If it was X (now checked), show ✔
+    el.innerText = isChecked ? '✕' : '✔';
     
     // Optimistic UI Update
     await sendData({ action: 'toggleHabit', habitId: id, date: date });
@@ -255,12 +254,9 @@ function changeCalendarMonth(delta) {
 function renderCalendar(id) {
     const grid = document.getElementById('calendar-grid');
     grid.innerHTML = '';
-    
     const displayDate = new Date(calendarOffsetDate);
-    
     const days = ['M','T','W','T','F','S','S']; 
     days.forEach(d => grid.innerHTML += `<div style="font-size:10px; color:#888">${d}</div>`);
-    
     document.getElementById('cal-month-name').innerText = displayDate.toLocaleDateString('en-US', {month: 'long', year: 'numeric'});
     
     const year = displayDate.getFullYear();
@@ -268,7 +264,6 @@ function renderCalendar(id) {
     
     let firstDayIndex = new Date(year, month, 1).getDay(); 
     firstDayIndex = (firstDayIndex === 0) ? 6 : firstDayIndex - 1;
-
     const daysInMonth = new Date(year, month + 1, 0).getDate();
     
     for(let i=0; i<firstDayIndex; i++) grid.innerHTML += '<div></div>';
@@ -286,11 +281,9 @@ function renderCalendar(id) {
 
 function renderHeatmap(id) {
     if(!id) id = currentHabitId;
-    
     const mode = document.getElementById('heatmap-select').value;
     const grid = document.getElementById('heatmap-grid');
     grid.innerHTML = '';
-    
     const today = new Date();
     let startDate = new Date();
     
@@ -301,10 +294,7 @@ function renderHeatmap(id) {
         startDate.setFullYear(today.getFullYear() - 1);
     } else if (mode === 'all') {
         startDate = new Date('2025-01-01');
-        const logs = appData.habitLogs
-            .filter(l => String(l[0]) === String(id))
-            .map(l => String(l[1]))
-            .sort();
+        const logs = appData.habitLogs.filter(l => String(l[0]) === String(id)).map(l => String(l[1])).sort();
         if(logs.length > 0) {
             const firstLog = new Date(logs[0]);
             if (firstLog < startDate) startDate = firstLog;
@@ -318,7 +308,6 @@ function renderHeatmap(id) {
         const d = new Date(startDate);
         d.setDate(startDate.getDate() + i);
         if (d > today) break;
-        
         const dateStr = d.toISOString().split('T')[0];
         const isChecked = checkStatus(id, dateStr);
         grid.innerHTML += `<div class="heat-box ${isChecked?'filled':''}" title="${dateStr}"></div>`;
@@ -329,15 +318,7 @@ async function saveHabitConfig() {
     const name = document.getElementById('edit-name').value;
     const freq = document.getElementById('edit-freq').value;
     const target = document.getElementById('edit-target').value;
-    
-    await sendData({
-        action: 'updateHabit',
-        id: currentHabitId,
-        name: name,
-        frequency: freq,
-        target: target
-    });
-    alert("Saved");
+    await sendData({ action: 'updateHabit', id: currentHabitId, name, frequency: freq, target });
     
     const habitIdx = appData.habits.findIndex(h => String(h[0]) === String(currentHabitId));
     if(habitIdx > -1) {
@@ -351,14 +332,9 @@ async function saveHabitConfig() {
 
 async function deleteCurrentHabit() {
     if(!confirm("Archive this habit?")) return;
-    
     await sendData({ action: 'deleteHabit', id: currentHabitId });
-    
     const habitIdx = appData.habits.findIndex(h => String(h[0]) === String(currentHabitId));
-    if(habitIdx > -1) {
-        appData.habits[habitIdx][4] = true; 
-    }
-    
+    if(habitIdx > -1) { appData.habits[habitIdx][4] = true; }
     closeHabitModal();
 }
 
@@ -372,13 +348,10 @@ function openAddHabitModal() {
 async function handleAddHabit() {
     const name = document.getElementById('newHabitName').value;
     if(!name) return;
-    
     const id = Date.now().toString();
     const freq = document.getElementById('newHabitFreq').value;
     const target = document.getElementById('newHabitTarget').value;
-    
     await sendData({ action: 'addHabit', id, name, frequency: freq, target });
-    
     appData.habits.push([id, name, freq, target, false]);
     document.getElementById('add-habit-modal').style.display='none';
     renderHabitDashboard();
@@ -386,9 +359,5 @@ async function handleAddHabit() {
 
 async function sendData(payload) {
     payload.token = TOKEN;
-    return await fetch(SCRIPT_URL, {
-        method: "POST",
-        mode: "no-cors",
-        body: JSON.stringify(payload)
-    });
+    return await fetch(SCRIPT_URL, { method: "POST", mode: "no-cors", body: JSON.stringify(payload) });
 }
