@@ -1,13 +1,15 @@
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbybQvYzPIvCXhzIUZY3mXbeFx9VNjTekj4yjXIjsn69lZJ-SrqAfSJ17nllZHVCd1nvnQ/exec"; 
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxmYvmSP9BzQYGT9M0VcKluQ2xF72tojQUXlbsalQseq5hVS898TciwMArcFSrrpImFBQ/exec"; 
 const TOKEN = "aleLifeTracker_1999";
 
+// State
 let appData = { habits: [], habitLogs: [], settings: [] };
 let currentTheme = localStorage.getItem('theme') || '#0a84ff';
 let currentHabitId = null; 
 let calendarOffsetDate = new Date(); 
 
+// Initialization
 document.addEventListener('DOMContentLoaded', () => {
-    applyTheme(currentTheme);
+    applyTheme(currentTheme); // Instant load from LocalStorage
     fetchData();
 });
 
@@ -18,9 +20,14 @@ async function fetchData() {
         const data = await resp.json();
         appData = data;
         
+        // Sync Theme from Server
         const savedTheme = data.settings.find(s => s[0] === 'theme');
-        if (savedTheme) {
-            applyTheme(savedTheme[1]);
+        if (savedTheme && savedTheme[1]) {
+            // Update local storage and UI if server differs
+            if (savedTheme[1] !== currentTheme) {
+                applyTheme(savedTheme[1]);
+            }
+            // Update picker UI
             const picker = document.getElementById('themeColorPicker');
             if(picker) picker.value = savedTheme[1];
         }
@@ -33,14 +40,16 @@ async function fetchData() {
     }
 }
 
-// --- THEME ---
-function updateThemeFromPicker(color) {
-    setTheme(color);
-}
+// --- THEME LOGIC ---
 
-function setTheme(color) {
+function updateThemeFromPicker(color) {
+    // 1. Apply visual change immediately (Optimistic UI)
     applyTheme(color);
+    
+    // 2. Save to LocalStorage
     localStorage.setItem('theme', color);
+    
+    // 3. Save to Google Sheets (Async)
     sendData({ action: 'saveSetting', key: 'theme', value: color });
 }
 
@@ -48,7 +57,7 @@ function applyTheme(color) {
     currentTheme = color;
     document.documentElement.style.setProperty('--accent-color', color);
     
-    // Calculate RGBA for transparent background
+    // Calculate RGBA for transparent background (used in checkmarks)
     if(color.startsWith('#') && color.length === 7) {
         const r = parseInt(color.substr(1,2), 16);
         const g = parseInt(color.substr(3,2), 16);
@@ -57,6 +66,7 @@ function applyTheme(color) {
         document.documentElement.style.setProperty('--accent-color-bg', rgbaVal);
     }
     
+    // Update preview box if visible
     const previewBox = document.getElementById('color-preview-box');
     if(previewBox) previewBox.style.backgroundColor = color;
 }
@@ -110,8 +120,7 @@ function renderHabitDashboard() {
     const list = document.getElementById('habits-list');
     const header = document.getElementById('week-header');
     
-    // FIX: Filter out archived habits (Column index 4 is 'archived')
-    // Check if h[4] is explicitly true.
+    // Filter: Show only if not archived
     const validHabits = (appData.habits || []).filter(h => h[0] && h[1] && h[4] !== true);
 
     if (validHabits.length === 0) {
@@ -151,7 +160,6 @@ function renderHabitDashboard() {
 }
 
 function checkStatus(id, dateStr) {
-    // Robust check for string matching
     return appData.habitLogs.some(l => String(l[0]) === String(id) && String(l[1]).startsWith(dateStr));
 }
 
@@ -164,14 +172,11 @@ async function toggleHabit(id, date, el) {
     await sendData({ action: 'toggleHabit', habitId: id, date: date });
     
     if(isChecked) {
-        // Remove locally
         appData.habitLogs = appData.habitLogs.filter(l => !(String(l[0]) === String(id) && String(l[1]).startsWith(date)));
     } else {
-        // Add locally
         appData.habitLogs.push([id, date, 1]);
     }
     
-    // Update modal if open
     if(document.getElementById('habit-detail-modal').style.display === 'block') {
         renderHabitStats(id);
         renderCalendar(id);
@@ -223,7 +228,6 @@ function renderHabitStats(id) {
     const today = new Date().toISOString().split('T')[0];
     let checkDate = new Date();
     
-    // Simple streak calculation (checks strict daily continuity)
     if (logs.includes(today)) streak = 1;
     
     let loopLimit = 365; 
@@ -345,17 +349,14 @@ async function saveHabitConfig() {
     openHabitDetail(currentHabitId);
 }
 
-// FIX: Archive Habit instead of Hard Delete
 async function deleteCurrentHabit() {
-    if(!confirm("Archive this habit? It will be hidden from the dashboard.")) return;
+    if(!confirm("Archive this habit?")) return;
     
-    // Send backend request
     await sendData({ action: 'deleteHabit', id: currentHabitId });
     
-    // Update local data (Soft Delete)
     const habitIdx = appData.habits.findIndex(h => String(h[0]) === String(currentHabitId));
     if(habitIdx > -1) {
-        appData.habits[habitIdx][4] = true; // Set archived to true
+        appData.habits[habitIdx][4] = true; 
     }
     
     closeHabitModal();
@@ -376,10 +377,8 @@ async function handleAddHabit() {
     const freq = document.getElementById('newHabitFreq').value;
     const target = document.getElementById('newHabitTarget').value;
     
-    // Send to backend
     await sendData({ action: 'addHabit', id, name, frequency: freq, target });
     
-    // Optimistic Add (Archived = false)
     appData.habits.push([id, name, freq, target, false]);
     document.getElementById('add-habit-modal').style.display='none';
     renderHabitDashboard();
@@ -387,8 +386,6 @@ async function handleAddHabit() {
 
 async function sendData(payload) {
     payload.token = TOKEN;
-    // Note: mode 'no-cors' means we cannot read the response object.
-    // We rely on Optimistic UI updates.
     return await fetch(SCRIPT_URL, {
         method: "POST",
         mode: "no-cors",
