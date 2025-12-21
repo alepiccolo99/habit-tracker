@@ -15,16 +15,16 @@
 
     <div class="main-container">
         <header>
-            <div class="color-btn-wrapper" title="Change Theme Color">
+            <div class="header-btn-circle" title="Change Theme">
                 <svg id="header-drop-icon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" stroke="none">
                     <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"></path>
                 </svg>
-                <input type="color" id="themeColorPicker" onchange="updateThemeFromPicker(this.value)">
+                <input type="color" id="headerThemePicker" onchange="updateThemeFromPicker(this.value)">
             </div>
             
             <h1>Habits</h1>
             
-            <button class="add-btn-circle" onclick="openAddHabitModal()" title="Add Habit">
+            <button class="header-btn-circle" onclick="openAddHabitModal()" title="Add Habit">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
                     <line x1="12" y1="5" x2="12" y2="19"></line>
                     <line x1="5" y1="12" x2="19" y2="12"></line>
@@ -103,17 +103,16 @@
 
             <div class="card">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-                    <h3 style="margin:0; font-size:16px;">History</h3>
-                    <select id="heatmap-select" style="width:auto; padding:8px 24px 8px 10px; margin:0; font-size:14px;" onchange="renderHeatmap()">
-                        <option value="30">Last Month</option>
-                        <option value="90">Last 3 Months</option>
-                        <option value="365">Last Year</option>
+                    <h3 style="margin:0; font-size:16px">History</h3>
+                    <select id="heatmap-select" onchange="renderHeatmap(null)" style="width:auto; margin:0; padding:8px; font-size:14px;">
+                        <option value="month">Last Month</option>
+                        <option value="3months">Last 3 Months</option>
+                        <option value="year">Last Year</option>
                         <option value="all">All Time</option>
                     </select>
                 </div>
                 <div class="heatmap-grid" id="heatmap-grid"></div>
             </div>
-
         </div>
     </div>
 
