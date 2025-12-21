@@ -49,13 +49,12 @@ function applyTheme(color) {
     currentTheme = color;
     document.documentElement.style.setProperty('--accent-color', color);
     
-    // Calculate RGBA for transparent background
     if(color.startsWith('#') && color.length === 7) {
         const r = parseInt(color.substr(1,2), 16);
         const g = parseInt(color.substr(3,2), 16);
         const b = parseInt(color.substr(5,2), 16);
-        // Changed opacity to 0.15 for better contrast in cells
-        const rgbaVal = `rgba(${r}, ${g}, ${b}, 0.15)`;
+        // Using 0.2 opacity for the checked background box
+        const rgbaVal = `rgba(${r}, ${g}, ${b}, 0.2)`;
         document.documentElement.style.setProperty('--accent-color-bg', rgbaVal);
     }
     
@@ -112,7 +111,6 @@ function renderHabitDashboard() {
     const list = document.getElementById('habits-list');
     const header = document.getElementById('week-header');
     
-    // Filter archived
     const validHabits = (appData.habits || []).filter(h => h[0] && h[1] && h[4] !== true);
 
     if (validHabits.length === 0) {
@@ -124,7 +122,7 @@ function renderHabitDashboard() {
     const days = getRecentDays(5);
     const todayStr = new Date().toDateString(); 
     
-    // Header Grid matching the content grid (Spacer for Name + 5 Days)
+    // Header setup to match the row grid: Empty div for name space, then days
     header.innerHTML = '<div></div>' + days.map(d => {
         const isToday = d.toDateString() === todayStr;
         return `
@@ -143,7 +141,6 @@ function renderHabitDashboard() {
             ${days.map(d => {
                 const dateStr = d.toISOString().split('T')[0];
                 const checked = checkStatus(id, dateStr);
-                // Visual Logic: If checked -> Show ✔, If NOT checked -> Show ✕
                 const symbol = checked ? '✔' : '✕';
                 
                 return `<div class="cell ${checked ? 'checked' : ''}" 
@@ -163,11 +160,9 @@ async function toggleHabit(id, date, el) {
     const isChecked = el.classList.contains('checked');
     el.classList.toggle('checked');
     
-    // Toggle visual symbol immediately
-    // If it was checked (now unchecked), show X. If it was X (now checked), show ✔
+    // Visual Toggle
     el.innerText = isChecked ? '✕' : '✔';
     
-    // Optimistic UI Update
     await sendData({ action: 'toggleHabit', habitId: id, date: date });
     
     if(isChecked) {
