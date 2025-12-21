@@ -48,8 +48,7 @@ function applyTheme(color) {
     currentTheme = color;
     document.documentElement.style.setProperty('--accent-color', color);
     
-    // FIX #4: Calculate RGBA for transparent background
-    // Assumes color is HEX format (#RRGGBB)
+    // Calculate RGBA for transparent background
     if(color.startsWith('#') && color.length === 7) {
         const r = parseInt(color.substr(1,2), 16);
         const g = parseInt(color.substr(3,2), 16);
@@ -82,7 +81,6 @@ function router(viewId) {
     if (viewId === 'habits') {
         const addBtn = document.createElement('button');
         addBtn.innerHTML = "Add"; 
-        // FIX #3: Use 'btn-secondary' to match Edit/Cancel buttons exactly
         addBtn.className = "btn-secondary"; 
         addBtn.onclick = openAddHabitModal;
         actionArea.appendChild(addBtn);
@@ -112,7 +110,9 @@ function renderHabitDashboard() {
     const list = document.getElementById('habits-list');
     const header = document.getElementById('week-header');
     
-    const validHabits = (appData.habits || []).filter(h => h[0] && h[1]);
+    // FIX: Filter out archived habits (Column index 4 is 'archived')
+    // Check if h[4] is explicitly true.
+    const validHabits = (appData.habits || []).filter(h => h[0] && h[1] && h[4] !== true);
 
     if (validHabits.length === 0) {
         list.innerHTML = `<div style="text-align:center; color:#555; margin-top:30px;">Tap "Add" to start tracking.</div>`;
@@ -123,7 +123,6 @@ function renderHabitDashboard() {
     const days = getRecentDays(5);
     const todayStr = new Date().toDateString(); 
     
-    // FIX #1: Highlight applied to the whole wrapper (.day-wrapper-header)
     header.innerHTML = '<div></div>' + days.map(d => {
         const isToday = d.toDateString() === todayStr;
         return `
@@ -152,6 +151,7 @@ function renderHabitDashboard() {
 }
 
 function checkStatus(id, dateStr) {
+    // Robust check for string matching
     return appData.habitLogs.some(l => String(l[0]) === String(id) && String(l[1]).startsWith(dateStr));
 }
 
@@ -160,14 +160,18 @@ async function toggleHabit(id, date, el) {
     el.classList.toggle('checked');
     el.innerText = isChecked ? '' : '✔';
     
+    // Optimistic UI Update
     await sendData({ action: 'toggleHabit', habitId: id, date: date });
     
     if(isChecked) {
+        // Remove locally
         appData.habitLogs = appData.habitLogs.filter(l => !(String(l[0]) === String(id) && String(l[1]).startsWith(date)));
     } else {
+        // Add locally
         appData.habitLogs.push([id, date, 1]);
     }
     
+    // Update modal if open
     if(document.getElementById('habit-detail-modal').style.display === 'block') {
         renderHabitStats(id);
         renderCalendar(id);
@@ -219,6 +223,7 @@ function renderHabitStats(id) {
     const today = new Date().toISOString().split('T')[0];
     let checkDate = new Date();
     
+    // Simple streak calculation (checks strict daily continuity)
     if (logs.includes(today)) streak = 1;
     
     let loopLimit = 365; 
@@ -340,10 +345,19 @@ async function saveHabitConfig() {
     openHabitDetail(currentHabitId);
 }
 
+// FIX: Archive Habit instead of Hard Delete
 async function deleteCurrentHabit() {
-    if(!confirm("Delete this habit?")) return;
+    if(!confirm("Archive this habit? It will be hidden from the dashboard.")) return;
+    
+    // Send backend request
     await sendData({ action: 'deleteHabit', id: currentHabitId });
-    appData.habits = appData.habits.filter(h => String(h[0]) !== String(currentHabitId));
+    
+    // Update local data (Soft Delete)
+    const habitIdx = appData.habits.findIndex(h => String(h[0]) === String(currentHabitId));
+    if(habitIdx > -1) {
+        appData.habits[habitIdx][4] = true; // Set archived to true
+    }
+    
     closeHabitModal();
 }
 
@@ -362,8 +376,10 @@ async function handleAddHabit() {
     const freq = document.getElementById('newHabitFreq').value;
     const target = document.getElementById('newHabitTarget').value;
     
+    // Send to backend
     await sendData({ action: 'addHabit', id, name, frequency: freq, target });
     
+    // Optimistic Add (Archived = false)
     appData.habits.push([id, name, freq, target, false]);
     document.getElementById('add-habit-modal').style.display='none';
     renderHabitDashboard();
@@ -371,6 +387,8 @@ async function handleAddHabit() {
 
 async function sendData(payload) {
     payload.token = TOKEN;
+    // Note: mode 'no-cors' means we cannot read the response object.
+    // We rely on Optimistic UI updates.
     return await fetch(SCRIPT_URL, {
         method: "POST",
         mode: "no-cors",
