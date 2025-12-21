@@ -1,4 +1,4 @@
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyUn2YlTK1EOPpQvQ71tG3zgBo7Z5N2YvDUrG0oEMua44SuTSUSQXOz3mewk9eSuVgv2Q/exec"; 
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxuAj2iTlHP510PvzEIwJL9H1Nazuc-yF_iqVTE5zbpwssbBLfjqsoditVI9FIfxGoygQ/exec"; 
 const TOKEN = "aleLifeTracker_1999";
 
 let appData = { habits: [], habitLogs: [], settings: [] };
@@ -91,7 +91,7 @@ function renderHabitDashboard() {
             ${days.map(d => {
                 const dateStr = getLocalDateString(d);
                 const checked = appData.habitLogs.some(l => String(l[0]) === String(id) && String(l[1]) === dateStr);
-                // FIXED: Default gray '✕', Checked colored '✔'
+                // FIXED: '✔' (Check Mark) for done, '✕' (Multiplication X) for empty
                 const symbol = checked ? '✔' : '✕';
                 return `<div class="cell ${checked ? 'checked' : ''}" onclick="toggleHabit('${id}', '${dateStr}', this)">${symbol}</div>`;
             }).join('')}
@@ -104,7 +104,7 @@ function renderHabitDashboard() {
 async function toggleHabit(id, dateStr, el) {
     const isChecked = el.classList.contains('checked');
     
-    // Optimistic UI - Update symbol logic
+    // Optimistic UI - Toggle Symbol
     if (isChecked) {
         el.classList.remove('checked');
         el.innerText = '✕'; // Back to gray cross
@@ -117,7 +117,6 @@ async function toggleHabit(id, dateStr, el) {
     
     await sendData({ action: 'toggleHabit', habitId: id, date: dateStr });
     
-    // Refresh modals if open
     if(document.getElementById('habit-detail-modal').style.display === 'block') {
         renderHabitStats(id); renderCalendar(id);
     }
@@ -196,13 +195,8 @@ function toggleEditHabit() {
 
 function renderHabitStats(id) {
     const logs = appData.habitLogs.filter(l => String(l[0]) === String(id)).map(l => String(l[1])).sort();
-    
     document.getElementById('stat-total').innerText = logs.length;
-    
-    let streak = 0; 
-    const today = getLocalDateString(new Date()); 
-    let checkDate = new Date();
-    
+    let streak = 0; const today = getLocalDateString(new Date()); let checkDate = new Date();
     if (logs.includes(today)) streak = 1; 
     let limit = 365;
     while(limit > 0) {
@@ -224,29 +218,18 @@ function renderCalendar(id) {
     const grid = document.getElementById('calendar-grid'); 
     grid.innerHTML = ''; 
     const displayDate = new Date(calendarOffsetDate);
-    
     const days = ['M','T','W','T','F','S','S']; 
     days.forEach(d => grid.innerHTML += `<div style="font-size:10px; color:#666">${d}</div>`);
-    
     document.getElementById('cal-month-name').innerText = displayDate.toLocaleDateString('en-US', {month: 'long', year: 'numeric'});
-    
-    const year = displayDate.getFullYear(); 
-    const month = displayDate.getMonth();
-    
-    let firstDayIndex = new Date(year, month, 1).getDay(); 
-    firstDayIndex = (firstDayIndex === 0) ? 6 : firstDayIndex - 1;
+    const year = displayDate.getFullYear(); const month = displayDate.getMonth();
+    let firstDayIndex = new Date(year, month, 1).getDay(); firstDayIndex = (firstDayIndex === 0) ? 6 : firstDayIndex - 1;
     const daysInMonth = new Date(year, month + 1, 0).getDate();
-    
     for(let i=0; i<firstDayIndex; i++) grid.innerHTML += '<div></div>';
-    
-    const now = new Date(); 
-    const isCurrentMonth = (now.getFullYear() === year && now.getMonth() === month);
-    
+    const now = new Date(); const isCurrentMonth = (now.getFullYear() === year && now.getMonth() === month);
     for(let i=1; i<=daysInMonth; i++) {
         const dStr = `${year}-${String(month+1).padStart(2,'0')}-${String(i).padStart(2,'0')}`;
         const isChecked = appData.habitLogs.some(l => String(l[0]) === String(id) && String(l[1]) === dStr);
         const isToday = isCurrentMonth && (i === now.getDate());
-        
         grid.innerHTML += `<div class="cal-day ${isChecked?'active':''} ${isToday?'today':''}">${i}</div>`;
     }
 }
@@ -255,23 +238,26 @@ function renderCalendar(id) {
 function openSettings() { 
     document.getElementById('settings-modal').style.display = 'block'; 
     document.getElementById('themeColorPicker').value = currentTheme; 
-    document.getElementById('color-icon').style.color = currentTheme;
+    // No need to set icon color here, it's bound to CSS variable
 }
 function openAddHabitModal() { document.getElementById('newHabitName').value = ""; document.getElementById('add-habit-modal').style.display = 'block'; }
 
 function updateThemeFromPicker(color) { 
     applyTheme(color); 
     localStorage.setItem('theme', color); 
-    // Update the icon color immediately
-    const icon = document.getElementById('color-icon');
-    if(icon) icon.style.color = color;
-    
+    // Icon updates automatically via CSS
     sendData({ action: 'saveSetting', key: 'theme', value: color }); 
 }
 
 function applyTheme(color) {
     currentTheme = color; 
     document.documentElement.style.setProperty('--accent-color', color);
+    // Update header icon color explicitly if needed (though CSS handles it)
+    const headerDrop = document.getElementById('header-drop-icon');
+    if(headerDrop) headerDrop.style.color = color;
+    const settingsDrop = document.getElementById('color-icon');
+    if(settingsDrop) settingsDrop.style.color = color;
+
     if(color.startsWith('#') && color.length === 7) {
         const r = parseInt(color.substr(1,2), 16); 
         const g = parseInt(color.substr(3,2), 16); 
