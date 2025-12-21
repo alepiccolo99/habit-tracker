@@ -46,14 +46,20 @@
             </div>
         </section>
 
-        <section id="health-view" class="view"><div class="card"><h3>Health Log</h3><p>Coming soon...</p></div></section>
+        <section id="health-view" class="view">
+            <div class="card transparent-card">
+                <div id="health-week-header" class="days-row"></div>
+                <div id="health-list"></div>
+            </div>
+        </section>
+
         <section id="workout-view" class="view"><div class="card"><h3>Workout Log</h3><p>Coming soon...</p></div></section>
         <section id="diet-view" class="view"><div class="card"><h3>Diet Log</h3><p>Coming soon...</p></div></section>
 
         <section id="settings-view" class="view">
             <div class="card">
                 <h3>App Theme</h3>
-                <div class="color-picker-wrapper" style="margin-top:15px;">
+                <div class="color-picker-wrapper">
                     <label class="btn-picker">
                         Pick Color
                         <input type="color" id="themeColorPicker" onchange="updateThemeFromPicker(this.value)">
@@ -72,7 +78,6 @@
             <h2 id="modal-habit-title">Habit</h2>
             <button class="btn-secondary" onclick="toggleEditHabit()">Edit</button>
         </div>
-        
         <div class="modal-content">
             <div id="habit-edit-form" class="card" style="display:none; border: 1px solid var(--border-color); margin-bottom: 20px;">
                 <h3>Edit Habit</h3>
@@ -81,28 +86,17 @@
                     <select id="edit-freq">
                         <option value="Daily">Daily</option>
                         <option value="Weekly">Weekly</option>
-                        <option value="Monthly">Monthly</option>
-                        <option value="Yearly">Yearly</option>
                     </select>
                     <input type="number" id="edit-target" placeholder="Target">
                 </div>
                 <button class="btn-primary" onclick="saveHabitConfig()">Save Changes</button>
-                <button class="btn-secondary" style="width:100%; margin-top:10px; color:#ff453a!important" onclick="deleteCurrentHabit()">Delete Habit</button>
+                <button class="btn-secondary" style="width:100%; margin-top:10px; color:#ff453a!important" onclick="deleteCurrentHabit()">Archive Habit</button>
             </div>
-
+            
             <div class="stats-row">
-                <div class="stat-card">
-                    <div class="stat-val" id="stat-streak">0</div>
-                    <div class="stat-label">Streak</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-val" id="stat-total">0</div>
-                    <div class="stat-label">Check-ins</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-val" id="stat-rate">0%</div>
-                    <div class="stat-label">Completion</div>
-                </div>
+                <div class="stat-card"><div class="stat-val" id="stat-streak">0</div><div class="stat-label">Streak</div></div>
+                <div class="stat-card"><div class="stat-val" id="stat-total">0</div><div class="stat-label">Check-ins</div></div>
+                <div class="stat-card"><div class="stat-val" id="stat-rate">0%</div><div class="stat-label">Completion</div></div>
             </div>
 
             <div class="card">
@@ -113,17 +107,56 @@
                 </div>
                 <div class="calendar-grid" id="calendar-grid"></div>
             </div>
-
             <div class="card">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
                     <h3 style="margin:0; font-size:18px">History</h3>
-                    <select id="heatmap-select" onchange="renderHeatmap(currentHabitId)">
+                    <select id="heatmap-select" onchange="renderHeatmap(null)">
                         <option value="3months">Last 3 Months</option>
                         <option value="year">Last Year</option>
                         <option value="all">All Time</option>
                     </select>
                 </div>
                 <div class="heatmap-grid" id="heatmap-grid"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="health-detail-modal" class="modal">
+        <div class="modal-header">
+            <button class="btn-secondary" onclick="closeHealthModal()">Back</button>
+            <h2 id="modal-health-title">Metric</h2>
+            <button class="btn-secondary" onclick="toggleEditHealth()">Edit</button>
+        </div>
+        <div class="modal-content">
+             <div id="health-edit-form" class="card" style="display:none; border: 1px solid var(--border-color); margin-bottom: 20px;">
+                <h3>Edit Metric</h3>
+                <input type="text" id="edit-health-name" placeholder="Name">
+                <div class="input-row">
+                    <input type="text" id="edit-health-unit" placeholder="Unit (e.g. kg)">
+                    <input type="number" id="edit-health-goal" placeholder="Goal Value">
+                </div>
+                <button class="btn-primary" onclick="saveHealthConfig()">Save Changes</button>
+                <button class="btn-secondary" style="width:100%; margin-top:10px; color:#ff453a!important" onclick="deleteCurrentHealth()">Archive Metric</button>
+            </div>
+
+            <div class="stats-row">
+                <div class="stat-card"><div class="stat-val" id="health-avg">0</div><div class="stat-label">Average</div></div>
+                <div class="stat-card"><div class="stat-val" id="health-min">0</div><div class="stat-label">Min</div></div>
+                <div class="stat-card"><div class="stat-val" id="health-max">0</div><div class="stat-label">Max</div></div>
+            </div>
+
+            <div class="card">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                    <h3 style="margin:0; font-size:18px">Trends</h3>
+                    <select id="chart-range-select" onchange="renderHealthChart()">
+                        <option value="week">Last Week</option>
+                        <option value="month" selected>Last Month</option>
+                        <option value="year">Last Year</option>
+                        <option value="all">All Time</option>
+                    </select>
+                </div>
+                <div id="health-chart-container" class="chart-container">
+                    </div>
             </div>
         </div>
     </div>
@@ -136,17 +169,30 @@
         </div>
         <div class="modal-content">
             <div class="card">
-                <input type="text" id="newHabitName" placeholder="New Habit (e.g. Read Book)">
+                <input type="text" id="newHabitName" placeholder="Name (e.g. Read Book)">
                 <div class="input-row">
-                    <select id="newHabitFreq">
-                        <option value="Daily" selected>Daily</option>
-                        <option value="Weekly">Weekly</option>
-                        <option value="Monthly">Monthly</option>
-                        <option value="Yearly">Yearly</option>
-                    </select>
+                    <select id="newHabitFreq"><option value="Daily">Daily</option></select>
                     <input type="number" id="newHabitTarget" value="1">
                 </div>
                 <button class="btn-primary" onclick="handleAddHabit()">Create Habit</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="add-health-modal" class="modal" style="display:none; z-index: 2100;">
+        <div class="modal-header">
+            <button class="btn-secondary" onclick="document.getElementById('add-health-modal').style.display='none'">Cancel</button>
+            <h2>New Metric</h2>
+            <div style="width:50px"></div>
+        </div>
+        <div class="modal-content">
+            <div class="card">
+                <input type="text" id="newHealthName" placeholder="Name (e.g. Steps)">
+                <div class="input-row">
+                    <input type="text" id="newHealthUnit" placeholder="Unit (e.g. km)">
+                    <input type="number" id="newHealthGoal" placeholder="Goal (optional)">
+                </div>
+                <button class="btn-primary" onclick="handleAddHealth()">Create Metric</button>
             </div>
         </div>
     </div>
